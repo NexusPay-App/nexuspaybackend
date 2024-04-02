@@ -8,28 +8,57 @@ import fetch from "node-fetch";
 import {tokenContract } from '../config/constants';
 
 
+// export const send = async (req: Request, res: Response) => {
+
+//   const { tokenAddress, recipientPhoneNumber, amount, senderAddress } = req.body;
+
+//   if (!tokenAddress || !recipientPhoneNumber || !amount || !senderAddress) {
+//       return res.status(400).send({ message: "Required parameters are missing!" });
+//   }
+
+//   // Find user with the provided phone number
+//   const user = await User.findOne({ phoneNumber: recipientPhoneNumber });
+//   if (!user) {
+//       return res.status(404).send({ message: "Recipient phone number not found!" });
+//   }
+
+//   try {
+//       await sendToken(tokenAddress, user.walletAddress, amount, senderAddress);
+//       res.send({ message: 'Token sent successfully!' });
+//   } catch (error) {
+//       console.error("Error in API endpoint:", error);
+//       res.status(500).send({ message: 'Failed to send token.', error: error });
+//   }
+// };
+
 export const send = async (req: Request, res: Response) => {
-
-  const { tokenAddress, recipientPhoneNumber, amount, senderAddress } = req.body;
-
-  if (!tokenAddress || !recipientPhoneNumber || !amount || !senderAddress) {
-      return res.status(400).send({ message: "Required parameters are missing!" });
-  }
-
-  // Find user with the provided phone number
-  const user = await User.findOne({ phoneNumber: recipientPhoneNumber });
-  if (!user) {
-      return res.status(404).send({ message: "Recipient phone number not found!" });
-  }
-
-  try {
-      await sendToken(tokenAddress, user.walletAddress, amount, senderAddress);
-      res.send({ message: 'Token sent successfully!' });
-  } catch (error) {
-      console.error("Error in API endpoint:", error);
-      res.status(500).send({ message: 'Failed to send token.', error: error });
-  }
-};
+    const { tokenAddress, recipientIdentifier, amount, senderAddress } = req.body;
+  console.log(req.body)
+    if (!tokenAddress || !recipientIdentifier || !amount || !senderAddress) {
+        return res.status(400).send({ message: "Required parameters are missing!" });
+    }
+  
+    // Attempt to treat the recipientIdentifier as a wallet address first
+    let recipientAddress = recipientIdentifier;
+    
+    // If recipientIdentifier is not a valid Ethereum address, assume it's a phone number
+    if (!ethers.utils.isAddress(recipientIdentifier)) {
+        const user = await User.findOne({ phoneNumber: recipientIdentifier });
+        if (!user) {
+            return res.status(404).send({ message: "Recipient not found!" });
+        }
+        recipientAddress = user.walletAddress;
+    }
+  
+    try {
+        console.log(`${tokenAddress}, ${recipientAddress}, ${amount}, ${senderAddress}`)
+        await sendToken(tokenAddress, recipientAddress, amount, senderAddress);
+        res.send({ message: 'Token sent successfully!' });
+    } catch (error) {
+        console.error("Error in API endpoint:", error);
+        res.status(500).send({ message: 'Failed to send token.', error: error });
+    }
+  };
 
 export const pay = async (req: Request, res: Response) => {
  
@@ -103,6 +132,36 @@ interface TokenTransferEvent {
     confirmations: string;
 }
 
+// async function getAllTokenTransferEvents(
+//     walletAddress: string,
+//     apiKey: string,
+//     page: number = 1,
+//     offset: number = 5,
+//     sort: 'asc' | 'desc' = 'asc'
+// ): Promise<TokenTransferEvent[]> {
+//     const baseURL = 'https://api-testnet.polygonscan.com/api';
+//     const url = `${baseURL}?module=account&action=tokentx&address=${walletAddress}&page=${page}&offset=${offset}&sort=${sort}&apikey=${apiKey}`;
+
+//     try {
+//       const response = await fetch(url);
+//       if (!response.ok) {
+//           throw new Error('Failed to fetch data from PolygonScan');
+//       }
+      
+//       const data = await response.json() as { status: string; message: string; result: TokenTransferEvent[] };
+//       if (data.status !== '1') {
+//           throw new Error(data.message);
+//       }
+      
+//       return data.result;
+      
+//     } catch (error) {
+//         console.error('Error fetching token transfer events:', error);
+//         return [];
+//     }
+// }
+
+
 async function getAllTokenTransferEvents(
     walletAddress: string,
     apiKey: string,
@@ -111,6 +170,9 @@ async function getAllTokenTransferEvents(
     sort: 'asc' | 'desc' = 'asc'
 ): Promise<TokenTransferEvent[]> {
     const baseURL = 'https://api-testnet.polygonscan.com/api';
+    // Define the USDT contract address here (example address used, replace with the actual USDT address)
+    const usdtContractAddress = '0xEE49EA567f79e280E4F1602eb8e6479d1Fb9c8C8'.toLowerCase();
+    
     const url = `${baseURL}?module=account&action=tokentx&address=${walletAddress}&page=${page}&offset=${offset}&sort=${sort}&apikey=${apiKey}`;
 
     try {
@@ -124,13 +186,17 @@ async function getAllTokenTransferEvents(
           throw new Error(data.message);
       }
       
-      return data.result;
+      // Filter the transactions to include only those that match the USDT contract address
+      const usdtTransactions = data.result.filter(transaction => transaction.contractAddress.toLowerCase() === usdtContractAddress);
+      
+      return usdtTransactions;
       
     } catch (error) {
         console.error('Error fetching token transfer events:', error);
         return [];
     }
 }
+
 
 
 

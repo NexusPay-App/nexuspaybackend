@@ -19,9 +19,30 @@ const usdcAbi = [
     }
 ];
 
+let cache = {
+  rate: null,
+  timestamp: 0
+};
+
+export async function getConversionRateWithCaching() {
+  const cacheDuration = 10 * 60 * 1000; // 10 minutes in milliseconds
+  if (cache.rate && (Date.now() - cache.timestamp < cacheDuration)) {
+    return cache.rate; // Return cached rate if it's fresh
+  } else {
+    const rate = await fetchUSDCToKESPrice(); // Fetch new rate
+    cache = { rate, timestamp: Date.now() };
+    return rate;
+  }
+}
+
+export async function conversionController(req: Request, res: Response){
+  const rate = await getConversionRateWithCaching()
+  console.log(rate)
+  res.send({rate})
+}
 
 export const getUsdcBalance = async (req: Request, res: Response) => {
- 
+ console.log(cache.rate)
   try {
     const address = req.params.address;
     const usdcContract = new ethers.Contract(tokenAddress, usdcAbi, provider);
@@ -30,7 +51,7 @@ export const getUsdcBalance = async (req: Request, res: Response) => {
     const decimals = await usdcContract.decimals();
     const balanceInUSDC = balanceRaw.div(ethers.BigNumber.from(10).pow(decimals)).toNumber();
 
-    const conversionRate = await fetchUSDCToKESPrice();
+    const conversionRate = await getConversionRateWithCaching();
     const balanceInKES = balanceInUSDC * conversionRate;
    console.log(balanceInKES)
     res.json({

@@ -1,9 +1,10 @@
 import express from 'express';
-import { getUsdcBalance } from '../controllers/usdcController';
+import { conversionController, getUsdcBalance } from '../controllers/usdcController';
 import { authenticateToken } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-router.get('/usdc-balance/:address', authenticateToken, getUsdcBalance);
+router.get('/usdc-balance/:address', getUsdcBalance);
+router.get('/conversionrate', conversionController);
 
 export default router;

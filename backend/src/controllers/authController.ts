@@ -13,8 +13,8 @@ const SALT_ROUNDS = 10;
 
 // Initialize Africa's Talking
 const africastalking = AfricasTalking({
-  apiKey: '72304a965e635452ae1160a269365c30bd1ea72e6d39fba3aebd76cfa09af4a7',
-  username: 'sandbox'
+  apiKey: '5256d139ae09790bfacc4690e276fa6e0e0247299b9104d7c6c85f0f675bb83b',
+  username: 'NEXUSPAY'
 });
 
 // Temporary store for OTPs
