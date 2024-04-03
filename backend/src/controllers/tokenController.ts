@@ -8,28 +8,6 @@ import fetch from "node-fetch";
 import {tokenContract } from '../config/constants';
 
 
-// export const send = async (req: Request, res: Response) => {
-
-//   const { tokenAddress, recipientPhoneNumber, amount, senderAddress } = req.body;
-
-//   if (!tokenAddress || !recipientPhoneNumber || !amount || !senderAddress) {
-//       return res.status(400).send({ message: "Required parameters are missing!" });
-//   }
-
-//   // Find user with the provided phone number
-//   const user = await User.findOne({ phoneNumber: recipientPhoneNumber });
-//   if (!user) {
-//       return res.status(404).send({ message: "Recipient phone number not found!" });
-//   }
-
-//   try {
-//       await sendToken(tokenAddress, user.walletAddress, amount, senderAddress);
-//       res.send({ message: 'Token sent successfully!' });
-//   } catch (error) {
-//       console.error("Error in API endpoint:", error);
-//       res.status(500).send({ message: 'Failed to send token.', error: error });
-//   }
-// };
 
 export const send = async (req: Request, res: Response) => {
     const { tokenAddress, recipientIdentifier, amount, senderAddress } = req.body;
@@ -132,34 +110,6 @@ interface TokenTransferEvent {
     confirmations: string;
 }
 
-// async function getAllTokenTransferEvents(
-//     walletAddress: string,
-//     apiKey: string,
-//     page: number = 1,
-//     offset: number = 5,
-//     sort: 'asc' | 'desc' = 'asc'
-// ): Promise<TokenTransferEvent[]> {
-//     const baseURL = 'https://api-testnet.polygonscan.com/api';
-//     const url = `${baseURL}?module=account&action=tokentx&address=${walletAddress}&page=${page}&offset=${offset}&sort=${sort}&apikey=${apiKey}`;
-
-//     try {
-//       const response = await fetch(url);
-//       if (!response.ok) {
-//           throw new Error('Failed to fetch data from PolygonScan');
-//       }
-      
-//       const data = await response.json() as { status: string; message: string; result: TokenTransferEvent[] };
-//       if (data.status !== '1') {
-//           throw new Error(data.message);
-//       }
-      
-//       return data.result;
-      
-//     } catch (error) {
-//         console.error('Error fetching token transfer events:', error);
-//         return [];
-//     }
-// }
 
 
 async function getAllTokenTransferEvents(
@@ -167,7 +117,7 @@ async function getAllTokenTransferEvents(
     apiKey: string,
     page: number = 1,
     offset: number = 5,
-    sort: 'asc' | 'desc' = 'asc'
+    sort: 'asc' | 'desc' = 'desc' // Change made here to default to 'desc'
 ): Promise<TokenTransferEvent[]> {
     const baseURL = 'https://api-testnet.polygonscan.com/api';
     // Define the USDT contract address here (example address used, replace with the actual USDT address)
