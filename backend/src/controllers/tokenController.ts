@@ -30,7 +30,7 @@ export const send = async (req: Request, res: Response) => {
   
     try {
         console.log(`${tokenAddress}, ${recipientAddress}, ${amount}, ${senderAddress}`)
-        await sendToken(tokenAddress, recipientAddress, amount, senderAddress);
+        await sendToken1(tokenAddress, recipientAddress, amount, senderAddress);
         res.send({ message: 'Token sent successfully!' });
     } catch (error) {
         console.error("Error in API endpoint:", error);
@@ -61,7 +61,7 @@ export const pay = async (req: Request, res: Response) => {
   }
 
   try {
-      await sendToken(tokenAddress, business.walletAddress, amount, senderAddress);
+      await payToken(tokenAddress, business.walletAddress, amount, senderAddress);
       res.send({ message: 'Token sent successfully to the business!' });
   } catch (error) {
       console.error("Error in API endpoint:", error);
@@ -151,9 +151,9 @@ async function getAllTokenTransferEvents(
 
 
   const PLATFORM_WALLET_ADDRESS = "0x4c2C4bB506D2eFab0a7235DEee07E75737d5472f"; // Hardcoded platform wallet address
-  const FEE_PERCENTAGE = 0.005; // 0.5%
+//   const FEE_PERCENTAGE = 0.005; // 0.5%
   
-  async function sendToken(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
+  async function payToken(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
       try {
           let user = await User.findOne({ walletAddress: senderAddress });
           console.log("Private Key:", user);
@@ -168,7 +168,7 @@ async function getAllTokenTransferEvents(
           }
   
           const amountGwei = ethers.utils.parseUnits(amount.toString(), decimals);
-          const feeAmountGwei = ethers.utils.parseUnits((amount * FEE_PERCENTAGE).toString(), decimals);
+        //   const feeAmountGwei = ethers.utils.parseUnits((amount * FEE_PERCENTAGE).toString(), decimals);
   
           // Transaction to recipient
           const recipientData = (await tokenContract.populateTransaction.transfer(recipientAddress, amountGwei)).data;
@@ -178,14 +178,14 @@ async function getAllTokenTransferEvents(
           };
   
           // Transaction for platform fee
-          const feeData = (await tokenContract.populateTransaction.transfer(PLATFORM_WALLET_ADDRESS, feeAmountGwei)).data;
-          const feeTransaction = {
-              to: tokenAddress,
-              data: feeData,
-          };
+        //   const feeData = (await tokenContract.populateTransaction.transfer(PLATFORM_WALLET_ADDRESS, feeAmountGwei)).data;
+        //   const feeTransaction = {
+        //       to: tokenAddress,
+        //       data: feeData,
+        //   };
   
           // Batch the transactions
-          let partialUserOp = await biconomySmartAccount.buildUserOp([recipientTransaction, feeTransaction]);
+          let partialUserOp = await biconomySmartAccount.buildUserOp([recipientTransaction]);
   
           // The remaining part of the code is similar
           // Handle paymaster, send userOp, etc.
@@ -223,3 +223,95 @@ async function getAllTokenTransferEvents(
           console.error("Error in sendToken:", error);
         }
       }
+
+
+
+// const PLATFORM_WALLET_ADDRESS = "0x4c2C4bB506D2eFab0a7235DEee07E75737d5472f"; // Hardcoded platform wallet address
+
+// Function to calculate transaction fee based on the amount
+function calculateTransactionFee(amount: number): number {
+    if (amount <= 1) return 0;
+    if (amount <= 5) return 0.05;
+    if (amount <= 10) return 0.1;
+    if (amount <= 15) return 0.2;
+    if (amount <= 25) return 0.3;
+    if (amount <= 35) return 0.45;
+    if (amount <= 50) return 0.5;
+    if (amount <= 75) return 0.68;
+    if (amount <= 100) return 0.79;
+    if (amount <= 150) return 0.88;
+    return 0.95; // For amounts above $150.01
+}
+
+async function sendToken1(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
+    try {
+        let user = await User.findOne({ walletAddress: senderAddress });
+        console.log("Private Key:", user);
+
+        const biconomySmartAccount = await instanceAccount(user?.privateKey as string);
+
+        let decimals = 18;
+        try {
+            decimals = await tokenContract.decimals();
+        } catch (error) {
+            throw new Error('invalid token address supplied');
+        }
+
+        const amountGwei = ethers.utils.parseUnits(amount.toString(), decimals);
+        const feeUSD = calculateTransactionFee(amount); // Use the new function to calculate the fee
+        const feeAmountGwei = ethers.utils.parseUnits(feeUSD.toString(), decimals);
+
+        // Transaction to recipient
+        const recipientData = (await tokenContract.populateTransaction.transfer(recipientAddress, amountGwei)).data;
+        const recipientTransaction = {
+            to: tokenAddress,
+            data: recipientData,
+        };
+
+        // Transaction for platform fee
+        const feeData = (await tokenContract.populateTransaction.transfer(PLATFORM_WALLET_ADDRESS, feeAmountGwei)).data;
+        const feeTransaction = {
+            to: tokenAddress,
+            data: feeData,
+        };
+
+
+        // Batch the transactions
+        let partialUserOp = await biconomySmartAccount.buildUserOp([recipientTransaction, feeTransaction]);
+
+        // The remaining part of the code is similar
+        // Handle paymaster, send userOp, etc.
+
+        const biconomyPaymaster =
+        biconomySmartAccount.paymaster as IHybridPaymaster<SponsorUserOperationDto>;
+    
+    let paymasterServiceData: SponsorUserOperationDto = {
+        mode: PaymasterMode.SPONSORED,
+    };
+    console.log("getting paymaster and data");
+    try {
+        const paymasterAndDataResponse =
+            await biconomyPaymaster.getPaymasterAndData(
+                partialUserOp,
+                paymasterServiceData
+            );
+        partialUserOp.paymasterAndData =
+            paymasterAndDataResponse.paymasterAndData;
+    } catch (e) {
+        console.log("error received ", e);
+    }
+    console.log("sending userop");
+    try {
+        const userOpResponse = await biconomySmartAccount.sendUserOp(partialUserOp);
+        const transactionDetails = await userOpResponse.wait();
+        console.log(
+            `transactionDetails: https://mumbai.polygonscan.com/tx/${transactionDetails.receipt.transactionHash}`
+        );
+     
+    } catch (e) {
+        console.log("error received ", e);
+    }
+      } catch (error) {
+        console.error("Error in sendToken:", error);
+      }
+    }
