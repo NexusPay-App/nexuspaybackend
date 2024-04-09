@@ -1,6 +1,6 @@
 
 import express from 'express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
@@ -22,7 +22,24 @@ const PORT = 8000;
 app.use(helmet());
 
 // CORS middleware for allowing cross-origin requests
-app.use(cors());
+// app.use(cors());
+
+// Define allowed origins
+const allowedOrigins: string[] = ['http://localhost:3000', 'https://nexuspayapp-snowy.vercel.app/onboarding'];
+
+// CORS middleware for allowing cross-origin requests with TypeScript typing
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  optionsSuccessStatus: 200, // Some legacy browsers (IE11, various SmartTVs) choke on 204
+};
+
+app.use(cors(corsOptions));
 
 // Body parser middlewares
 app.use(bodyParser.json());

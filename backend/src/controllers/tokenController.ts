@@ -62,7 +62,7 @@ export const pay = async (req: Request, res: Response) => {
 
   try {
       await payToken(tokenAddress, business.walletAddress, amount, senderAddress);
-      res.send({ message: 'Token sent successfully to the business!' });
+      res.send({ message: 'Token sent successfully to the business!', paid: true });
   } catch (error) {
       console.error("Error in API endpoint:", error);
       res.status(500).send({ message: 'Failed to send token.', error: error });
