@@ -25,7 +25,7 @@ app.use(helmet());
 // app.use(cors());
 
 // Define allowed origins
-const allowedOrigins: string[] = ['http://localhost:3000', 'https://nexuspayapp-snowy.vercel.app/onboarding'];
+const allowedOrigins: string[] = ['http://localhost:3000', 'https://nexuspayapp-snowy.vercel.app'];
 
 // CORS middleware for allowing cross-origin requests with TypeScript typing
 const corsOptions: CorsOptions = {
