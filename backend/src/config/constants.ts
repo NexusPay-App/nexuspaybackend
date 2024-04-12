@@ -7,7 +7,7 @@ import { IPaymaster, BiconomyPaymaster } from "@biconomy/paymaster";
 
 
 // export const provider = new providers.JsonRpcProvider("https://rpc.ankr.com/polygon_mumbai")
-export const provider = new providers.JsonRpcProvider("https://polygon-mumbai.g.alchemy.com/v2/aMTaEiyjF4cjCbq_mF4Gvpktw-IgrscR")
+export const provider = new providers.JsonRpcProvider("https://polygon-mumbai.g.alchemy.com/v2/lnYqB_bLhgCoKBP_zGo6yToAtfCDgECH")
 
 export const tokenAddress = '0xEE49EA567f79e280E4F1602eb8e6479d1Fb9c8C8'
 export const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, provider);
