@@ -162,7 +162,7 @@ export async function createAccount() {
   
     const biconomySmartAccountConfig: BiconomySmartAccountConfig = {
       signer: wallet,
-      chainId: ChainId.POLYGON_MUMBAI,
+      chainId: ChainId.ARBITRUM_ONE_MAINNET,
       bundler: bundler,
       paymaster: paymaster
     }
@@ -181,7 +181,7 @@ export async function createAccount() {
       //smart account config
       const biconomySmartAccountConfig: BiconomySmartAccountConfig = {
         signer: wallet,
-        chainId: ChainId.POLYGON_MUMBAI,
+        chainId: ChainId.ARBITRUM_ONE_MAINNET,
         bundler: bundler,
         paymaster: paymaster
       }

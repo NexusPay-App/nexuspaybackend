@@ -41,29 +41,65 @@ export async function conversionController(req: Request, res: Response){
   res.send({rate})
 }
 
+// export const getUsdcBalance = async (req: Request, res: Response) => {
+//  console.log(cache.rate)
+//   try {
+//     const address = req.params.address;
+//     console.log(address)
+//     const usdcContract = new ethers.Contract(tokenAddress, usdcAbi, provider);
+
+//     const balanceRaw = await usdcContract.balanceOf(address);
+//     console.log(balanceRaw as string)
+//     const decimals = await usdcContract.decimals();
+//     console.log(`decimals ${decimals}`)
+//     const balanceInUSDC = balanceRaw.div(ethers.BigNumber.from(10).pow(decimals)).toNumber();
+
+//     const conversionRate = await getConversionRateWithCaching();
+//     const balanceInKES = balanceInUSDC * conversionRate;
+//    console.log(balanceInKES)
+//     res.json({
+//         balanceInUSDC: balanceInUSDC,
+//         balanceInKES: balanceInKES.toFixed(2),
+//         rate: conversionRate
+//     });
+
+// } catch (err) {
+//     console.error(err);
+//     res.status(500).send('Failed to fetch balance.');
+// }
+// };
+
 export const getUsdcBalance = async (req: Request, res: Response) => {
- console.log(cache.rate)
+  console.log(cache.rate)
   try {
-    const address = req.params.address;
-    const usdcContract = new ethers.Contract(tokenAddress, usdcAbi, provider);
+      const address = req.params.address;
+      console.log(address)
+      const usdcContract = new ethers.Contract(tokenAddress, usdcAbi, provider);
 
-    const balanceRaw = await usdcContract.balanceOf(address);
-    const decimals = await usdcContract.decimals();
-    const balanceInUSDC = balanceRaw.div(ethers.BigNumber.from(10).pow(decimals)).toNumber();
+      const balanceRaw = await usdcContract.balanceOf(address);
+      console.log(balanceRaw.toString())  // Display balance as string for debugging
+      const decimals = await usdcContract.decimals();
+      console.log(`decimals: ${decimals}`)
 
-    const conversionRate = await getConversionRateWithCaching();
-    const balanceInKES = balanceInUSDC * conversionRate;
-   console.log(balanceInKES)
-    res.json({
-        balanceInUSDC: balanceInUSDC,
-        balanceInKES: balanceInKES.toFixed(2),
-        rate: conversionRate
-    });
+      // Convert raw balance to a number in USDC by dividing by 10^decimals
+      // const balanceInUSDC = balanceRaw.div(ethers.BigNumber.from(10).pow(decimals)).toNumber();
+      const balanceInUSDC:any = ethers.utils.formatUnits(balanceRaw, decimals);
 
-} catch (err) {
-    console.error(err);
-    res.status(500).send('Failed to fetch balance.');
-}
+       console.log(balanceInUSDC)
+      const conversionRate = await getConversionRateWithCaching();
+      const balanceInKES = balanceInUSDC * conversionRate;
+      console.log(balanceInKES)
+
+      res.json({
+          balanceInUSDC: balanceInUSDC,
+          balanceInKES: balanceInKES.toFixed(2),
+          rate: conversionRate
+      });
+
+  } catch (err) {
+      console.error(err);
+      res.status(500).send('Failed to fetch balance.');
+  }
 };
 
 // Include any other USD Coin related functions here

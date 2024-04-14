@@ -73,7 +73,7 @@ export const tokenTransferEvents = async (req: Request, res: Response) => {
  
   const { address } = req.query;
 
-  const apikey = '6IEU61WYVQZJ9WT2U2UYZ3TVT2V7YG7QDF'
+  const apikey = '44UDQIEKU98ZQ559DWX4ZUZJC5EBK8XUU4'
 
   if (!address) {
       return res.status(400).send('Address required query parameters.');
@@ -119,9 +119,9 @@ async function getAllTokenTransferEvents(
     offset: number = 5,
     sort: 'asc' | 'desc' = 'desc' // Change made here to default to 'desc'
 ): Promise<TokenTransferEvent[]> {
-    const baseURL = 'https://api-testnet.polygonscan.com/api';
+    const baseURL = 'https://api.arbiscan.io/api';
     // Define the USDT contract address here (example address used, replace with the actual USDT address)
-    const usdtContractAddress = '0xEE49EA567f79e280E4F1602eb8e6479d1Fb9c8C8'.toLowerCase();
+    const usdtContractAddress = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831'.toLowerCase();
     
     const url = `${baseURL}?module=account&action=tokentx&address=${walletAddress}&page=${page}&offset=${offset}&sort=${sort}&apikey=${apiKey}`;
 
@@ -150,7 +150,7 @@ async function getAllTokenTransferEvents(
 
 
 
-  const PLATFORM_WALLET_ADDRESS = "0x4c2C4bB506D2eFab0a7235DEee07E75737d5472f"; // Hardcoded platform wallet address
+  const PLATFORM_WALLET_ADDRESS = "0x9c0486FafFE8E44FcEdc8e0D8760811BF25a942c"; // Hardcoded platform wallet address
 //   const FEE_PERCENTAGE = 0.005; // 0.5%
   
   async function payToken(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
@@ -160,7 +160,7 @@ async function getAllTokenTransferEvents(
   
           const biconomySmartAccount = await instanceAccount(user?.privateKey as string);
   
-          let decimals = 18;
+          let decimals = 6;
           try {
               decimals = await tokenContract.decimals();
           } catch (error) {
@@ -213,7 +213,7 @@ async function getAllTokenTransferEvents(
           const userOpResponse = await biconomySmartAccount.sendUserOp(partialUserOp);
           const transactionDetails = await userOpResponse.wait();
           console.log(
-              `transactionDetails: https://mumbai.polygonscan.com/tx/${transactionDetails.receipt.transactionHash}`
+              `transactionDetails: https://arbiscan.io/tx/${transactionDetails.receipt.transactionHash}`
           );
        
       } catch (e) {
@@ -250,7 +250,7 @@ async function sendToken1(tokenAddress: string, recipientAddress: string, amount
 
         const biconomySmartAccount = await instanceAccount(user?.privateKey as string);
 
-        let decimals = 18;
+        let decimals = 6;
         try {
             decimals = await tokenContract.decimals();
         } catch (error) {
@@ -305,7 +305,7 @@ async function sendToken1(tokenAddress: string, recipientAddress: string, amount
         const userOpResponse = await biconomySmartAccount.sendUserOp(partialUserOp);
         const transactionDetails = await userOpResponse.wait();
         console.log(
-            `transactionDetails: https://mumbai.polygonscan.com/tx/${transactionDetails.receipt.transactionHash}`
+            `transactionDetails: https://arbiscan.io/tx/${transactionDetails.receipt.transactionHash}`
         );
      
     } catch (e) {

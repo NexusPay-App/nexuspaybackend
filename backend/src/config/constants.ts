@@ -7,18 +7,17 @@ import { IPaymaster, BiconomyPaymaster } from "@biconomy/paymaster";
 
 
 // export const provider = new providers.JsonRpcProvider("https://rpc.ankr.com/polygon_mumbai")
-export const provider = new providers.JsonRpcProvider("https://polygon-mumbai.g.alchemy.com/v2/lnYqB_bLhgCoKBP_zGo6yToAtfCDgECH")
+export const provider = new providers.JsonRpcProvider("https://arb-mainnet.g.alchemy.com/v2/BsIntFyzOmCo53B6JR2WdYNk-j_4g2TM")
 
-export const tokenAddress = '0xEE49EA567f79e280E4F1602eb8e6479d1Fb9c8C8'
+export const tokenAddress = '0xaf88d065e77c8cc2239327c5edb3a432268e5831'
 export const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, provider);
 
-
 export const bundler: IBundler = new Bundler({
-    bundlerUrl: 'https://bundler.biconomy.io/api/v2/80001/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44',     
-    chainId: ChainId.POLYGON_MUMBAI,
+    bundlerUrl: 'https://bundler.biconomy.io/api/v2/42161/dewj2189.wh1289hU-7E49-45ic-af80-vgpmquMbo',     
+    chainId: ChainId.ARBITRUM_ONE_MAINNET,
     entryPointAddress: DEFAULT_ENTRYPOINT_ADDRESS,
   });
   
  export const paymaster: IPaymaster = new BiconomyPaymaster({
-    paymasterUrl: "https://paymaster.biconomy.io/api/v1/80001/HaTCCk72C.3dec203b-4396-4337-b40a-8ac1ab0cb0ea",
+    paymasterUrl: "https://paymaster.biconomy.io/api/v1/42161/tspCruvJC.e29dfbd1-6a60-4c2a-b0c8-5614640e0e06",
   });
