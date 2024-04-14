@@ -40,6 +40,8 @@ export const initiateRegisterUser = async (req: Request, res: Response) => {
   let existingUser = await User.findOne({ phoneNumber: phoneNumber });
   if (existingUser) {
     return res.status(409).send({ message: "Phone number already registered!" });
+    // return res.send({ message: "Phone number already registered!" });
+
   }
 
   const otp = generateOTP();
@@ -62,7 +64,9 @@ export const initiateRegisterUser = async (req: Request, res: Response) => {
 
 export const registerUser = async (req: Request, res: Response) => {
   const { phoneNumber, password, otp } = req.body;
+  console.log("regitser")
 
+console.log(otp)
   if (!phoneNumber || !password || !otp) {
     return res.status(400).send({ message: "Phone number, password, and OTP are required!" });
   }
@@ -74,8 +78,11 @@ export const registerUser = async (req: Request, res: Response) => {
 
   // OTP is valid, proceed with registration
   delete otpStore[phoneNumber]; // Clear the OTP as it's no longer needed
+  console.log("password")
 
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+  console.log("creating acc")
+
   const userSmartAccount = await createAccount();
   const { biconomySmartAccount, pk } = userSmartAccount;
   const walletAddress = await biconomySmartAccount.getSmartAccountAddress();
@@ -88,6 +95,7 @@ export const registerUser = async (req: Request, res: Response) => {
       privateKey: pk
     });
     await newUser.save();
+    console.log("done")
 
     const token = jwt.sign({ phoneNumber: newUser.phoneNumber, walletAddress: newUser.walletAddress }, 'zero', { expiresIn: '1h' });
     res.send({ token, message: "Registered successfully!", walletAddress: newUser.walletAddress, phoneNumber: newUser.phoneNumber });
@@ -158,8 +166,14 @@ export async function createAccount() {
  
     const newWallet = Wallet.createRandom();
     const pk = newWallet.privateKey
+    console.log("instancing EOA wallet")
+    console.log(provider.connection)
+    // Test the connection
+provider.getNetwork().then(network => console.log(network)).catch(err => console.error("Network error:", err));
+
     const wallet = new Wallet(pk, provider);
-  
+  console.log(`wallet created, ${wallet.address}`)
+
     const biconomySmartAccountConfig: BiconomySmartAccountConfig = {
       signer: wallet,
       chainId: ChainId.POLYGON_MUMBAI,
