@@ -29,7 +29,6 @@ const generateOTP = (): string => {
   return otp;
 };
 
-// Function to initiate registration and send OTP
 export const initiateRegisterUser = async (req: Request, res: Response) => {
   const { phoneNumber } = req.body;
 
@@ -37,13 +36,18 @@ export const initiateRegisterUser = async (req: Request, res: Response) => {
     return res.status(400).send({ message: "Phone number is required!" });
   }
 
-  let existingUser = await User.findOne({ phoneNumber: phoneNumber });
+  let existingUser;
+  try {
+    existingUser = await User.findOne({ phoneNumber: phoneNumber });
+  } catch (error) {
+    return handleError(error, res, "Failed to check existing user");
+  }
+
   if (existingUser) {
     return res.status(409).send({ message: "Phone number already registered!" });
   }
 
   const otp = generateOTP();
-  console.log(otp)
   otpStore[phoneNumber] = otp;
 
   try {
@@ -54,8 +58,7 @@ export const initiateRegisterUser = async (req: Request, res: Response) => {
     });
     return res.send({ message: "OTP sent successfully. Please verify to complete registration." });
   } catch (error) {
-    console.error("Error sending OTP:", error);
-    return res.status(500).send({ message: "Failed to send OTP." });
+    return handleError(error, res, "Failed to send OTP", 500);
   }
 };
 
@@ -67,34 +70,37 @@ export const registerUser = async (req: Request, res: Response) => {
     return res.status(400).send({ message: "Phone number, password, and OTP are required!" });
   }
 
-  // Verify OTP
   if (!otpStore[phoneNumber] || otpStore[phoneNumber] !== otp) {
     return res.status(400).send({ message: "Invalid or expired OTP." });
   }
 
-  // OTP is valid, proceed with registration
   delete otpStore[phoneNumber]; // Clear the OTP as it's no longer needed
+  let newUser, hashedPassword, userSmartAccount;
 
-  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-  const userSmartAccount = await createAccount();
+  try {
+    hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    userSmartAccount = await createAccount();
+  } catch (error) {
+    return handleError(error, res, "Error during account creation or password hashing");
+  }
+
   const { biconomySmartAccount, pk } = userSmartAccount;
   const walletAddress = await biconomySmartAccount.getSmartAccountAddress();
 
   try {
-    const newUser = new User({
+    newUser = new User({
       phoneNumber: phoneNumber,
       walletAddress: walletAddress,
       password: hashedPassword,
       privateKey: pk
     });
     await newUser.save();
-
-    const token = jwt.sign({ phoneNumber: newUser.phoneNumber, walletAddress: newUser.walletAddress }, 'zero', { expiresIn: '1h' });
-    res.send({ token, message: "Registered successfully!", walletAddress: newUser.walletAddress, phoneNumber: newUser.phoneNumber });
   } catch (error) {
-    console.error("Error registering user:", error);
-    res.status(500).send({ message: "An error occurred while registering." });
+    return handleError(error, res, "Error registering user");
   }
+
+  const token = jwt.sign({ phoneNumber: newUser.phoneNumber, walletAddress: newUser.walletAddress }, 'zero', { expiresIn: '1h' });
+  res.send({ token, message: "Registered successfully!", walletAddress: newUser.walletAddress, phoneNumber: newUser.phoneNumber });
 };
 
 
@@ -105,12 +111,24 @@ export const loginUser = async (req: Request, res: Response) => {
     return res.status(400).send({ message: "Phone number and password are required!" });
   }
 
-  let user = await User.findOne({ phoneNumber: phoneNumber });
+  let user;
+  try {
+    user = await User.findOne({ phoneNumber: phoneNumber });
+  } catch (error) {
+    return handleError(error, res, "Failed to retrieve user information");
+  }
+
   if (!user) {
     return res.status(404).send({ message: "User not found" });
   }
 
-  const isPasswordValid = await bcrypt.compare(password, user.password);
+  let isPasswordValid;
+  try {
+    isPasswordValid = await bcrypt.compare(password, user.password);
+  } catch (error) {
+    return handleError(error, res, "Error checking password validity");
+  }
+
   if (!isPasswordValid) {
     return res.status(401).send({ message: "Invalid credentials!" });
   }
@@ -120,39 +138,6 @@ export const loginUser = async (req: Request, res: Response) => {
 };
 
 
-// export const registerUser = async (req: Request, res: Response) => {
-//   const { phoneNumber, password } = req.body;
-
-//   if (!phoneNumber || !password) {
-//     return res.status(400).send({ message: "Phone number and password are required!" });
-//   }
-
-//   let existingUser = await User.findOne({ phoneNumber: phoneNumber });
-//   if (existingUser) {
-//     return res.status(409).send({ message: "Phone number already registered!" });
-//   }
-
-//   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-//   const userSmartAccount = await createAccount();
-//   const { biconomySmartAccount, pk } = userSmartAccount;
-//   const walletAddress = await biconomySmartAccount.getSmartAccountAddress();
-
-//   try {
-//     const newUser = new User({
-//       phoneNumber: phoneNumber,
-//       walletAddress: walletAddress,
-//       password: hashedPassword,
-//       privateKey: pk
-//     });
-//     await newUser.save();
-
-//     const token = jwt.sign({ phoneNumber: newUser.phoneNumber, walletAddress: newUser.walletAddress }, 'zero', { expiresIn: '1h' });
-//     res.send({ token, message: "Registered successfully!", walletAddress: newUser.walletAddress, phoneNumber: newUser.phoneNumber });
-//   } catch (error) {
-//     console.error("Error registering user:", error);
-//     res.status(500).send({ message: "An error occurred while registering." });
-//   }
-// };
 
 export async function createAccount() {
  
@@ -195,3 +180,8 @@ export async function createAccount() {
 
 
 
+// Utility function to handle errors
+const handleError = (error: any, res: Response, message: string, statusCode: number = 500) => {
+  console.error(message, error);
+  return res.status(statusCode).send({ error: message, details: error.message });
+};

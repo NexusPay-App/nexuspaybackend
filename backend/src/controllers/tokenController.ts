@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { User } from '../models/models';
 import { Business } from '../models/businessModel';
@@ -5,21 +6,15 @@ import { IHybridPaymaster, PaymasterMode, SponsorUserOperationDto } from '@bicon
 import { ethers } from 'ethers';
 import { instanceAccount } from './authController';
 import fetch from "node-fetch";
-import {tokenContract } from '../config/constants';
-
-
+import { tokenContract } from '../config/constants';
 
 export const send = async (req: Request, res: Response) => {
     const { tokenAddress, recipientIdentifier, amount, senderAddress } = req.body;
-  console.log(req.body)
     if (!tokenAddress || !recipientIdentifier || !amount || !senderAddress) {
         return res.status(400).send({ message: "Required parameters are missing!" });
     }
-  
-    // Attempt to treat the recipientIdentifier as a wallet address first
+
     let recipientAddress = recipientIdentifier;
-    
-    // If recipientIdentifier is not a valid Ethereum address, assume it's a phone number
     if (!ethers.utils.isAddress(recipientIdentifier)) {
         const user = await User.findOne({ phoneNumber: recipientIdentifier });
         if (!user) {
@@ -27,65 +22,56 @@ export const send = async (req: Request, res: Response) => {
         }
         recipientAddress = user.walletAddress;
     }
-  
+
     try {
-        console.log(`${tokenAddress}, ${recipientAddress}, ${amount}, ${senderAddress}`)
-        await sendToken1(tokenAddress, recipientAddress, amount, senderAddress);
+        await sendToken(tokenAddress, recipientAddress, amount, senderAddress);
         res.send({ message: 'Token sent successfully!' });
     } catch (error) {
-        console.error("Error in API endpoint:", error);
-        res.status(500).send({ message: 'Failed to send token.', error: error });
+        console.error("Error in send API:", error);
+        res.status(500).send({ message: 'Failed to send token.', error: error});
     }
-  };
+};
 
 export const pay = async (req: Request, res: Response) => {
- 
-  const { tokenAddress, senderAddress, businessUniqueCode, amount, confirm } = req.body;
+    const { tokenAddress, senderAddress, businessUniqueCode, amount, confirm } = req.body;
+    if (!tokenAddress || !businessUniqueCode || !amount || !senderAddress) {
+        return res.status(400).send({ message: "Required parameters are missing!" });
+    }
 
-  if (!tokenAddress || !businessUniqueCode || !amount || !senderAddress) {
-      return res.status(400).send({ message: "Token address, business unique code, and amount are required!" });
-  }
+    const business = await Business.findOne({ uniqueCode: businessUniqueCode });
+    if (!business) {
+        return res.status(404).send({ message: "Business not found!" });
+    }
 
-  // Find a business with the provided unique code
-  const business = await Business.findOne({ uniqueCode: businessUniqueCode });
-  if (!business) {
-      return res.status(404).send({ message: "Business with the provided unique code not found!" });
-  }
+    if (!confirm) {
+        return res.status(200).send({
+            message: "Please confirm the payment to the business.",
+            businessName: business.businessName
+        });
+    }
 
-  // If the user has not confirmed the transaction
-  if (!confirm) {
-    return res.status(200).send({
-        message: "Please confirm the payment to the business.",
-        businessName: business.businessName
-    });
-  }
-
-  try {
-      await payToken(tokenAddress, business.walletAddress, amount, senderAddress);
-      res.send({ message: 'Token sent successfully to the business!', paid: true });
-  } catch (error) {
-      console.error("Error in API endpoint:", error);
-      res.status(500).send({ message: 'Failed to send token.', error: error });
-  }
+    try {
+        await payToken(tokenAddress, business.walletAddress, amount, senderAddress);
+        res.send({ message: 'Token sent successfully to the business!', paid: true });
+    } catch (error) {
+        console.error("Error in pay API:", error);
+        res.status(500).send({ message: 'Failed to send token.', error: error});
+    }   
 };
 
 export const tokenTransferEvents = async (req: Request, res: Response) => {
- 
-  const { address } = req.query;
+    const { address } = req.query;
+    if (!address) {
+        return res.status(400).send('Address is required as a query parameter.');
+    }
 
-  const apikey = '44UDQIEKU98ZQ559DWX4ZUZJC5EBK8XUU4'
-
-  if (!address) {
-      return res.status(400).send('Address required query parameters.');
-  }
-
-  try {
-      const events = await getAllTokenTransferEvents( address as string, apikey);
-      res.json(events);
-  } catch (error) {
-      console.error('Error fetching token transfer events:', error);
-      res.status(500).send('Internal server error.');
-  }
+    try {
+        const events = await getAllTokenTransferEvents(address as string);
+        res.json(events);
+    } catch (error) {
+        console.error('Error fetching token transfer events:', error);
+        res.status(500).send({ message: 'Internal server error', error: error});
+    }
 };
 
 interface TokenTransferEvent {
@@ -110,45 +96,29 @@ interface TokenTransferEvent {
     confirmations: string;
 }
 
-
-
-async function getAllTokenTransferEvents(
-    walletAddress: string,
-    apiKey: string,
-    page: number = 1,
-    offset: number = 5,
-    sort: 'asc' | 'desc' = 'desc' // Change made here to default to 'desc'
-): Promise<TokenTransferEvent[]> {
+async function getAllTokenTransferEvents(walletAddress: string): Promise<TokenTransferEvent[]> {
     const baseURL = 'https://api.arbiscan.io/api';
-    // Define the USDT contract address here (example address used, replace with the actual USDT address)
-    const usdtContractAddress = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831'.toLowerCase();
-    
-    const url = `${baseURL}?module=account&action=tokentx&address=${walletAddress}&page=${page}&offset=${offset}&sort=${sort}&apikey=${apiKey}`;
+    const apiKey = '44UDQIEKU98ZQ559DWX4ZUZJC5EBK8XUU4';
+    const url = `${baseURL}?module=account&action=tokentx&address=${walletAddress}&page=1&offset=5&sort=desc&apikey=${apiKey}`;
 
     try {
-      const response = await fetch(url);
-      if (!response.ok) {
-          throw new Error('Failed to fetch data from PolygonScan');
-      }
-      
-      const data = await response.json() as { status: string; message: string; result: TokenTransferEvent[] };
-      if (data.status !== '1') {
-          throw new Error(data.message);
-      }
-      
-      // Filter the transactions to include only those that match the USDT contract address
-      const usdtTransactions = data.result.filter(transaction => transaction.contractAddress.toLowerCase() === usdtContractAddress);
-      
-      return usdtTransactions;
-      
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Failed to fetch data from API');
+        }
+
+        const data = await response.json();
+        if (data.status !== '1') {
+            throw new Error(data.message);
+        }
+        return data.result as TokenTransferEvent[];
     } catch (error) {
-        console.error('Error fetching token transfer events:', error);
-        return [];
+        console.error('Error in getAllTokenTransferEvents:', error);
+        throw error;  // Re-throw to be caught by the controller error handler.
     }
 }
 
-
-
+// Other business logic functions like sendToken, payToken etc. go here.
 
   const PLATFORM_WALLET_ADDRESS = "0x9c0486FafFE8E44FcEdc8e0D8760811BF25a942c"; // Hardcoded platform wallet address
 //   const FEE_PERCENTAGE = 0.005; // 0.5%
@@ -177,18 +147,12 @@ async function getAllTokenTransferEvents(
               data: recipientData,
           };
   
-          // Transaction for platform fee
-        //   const feeData = (await tokenContract.populateTransaction.transfer(PLATFORM_WALLET_ADDRESS, feeAmountGwei)).data;
-        //   const feeTransaction = {
-        //       to: tokenAddress,
-        //       data: feeData,
-        //   };
+       
   
           // Batch the transactions
           let partialUserOp = await biconomySmartAccount.buildUserOp([recipientTransaction]);
   
-          // The remaining part of the code is similar
-          // Handle paymaster, send userOp, etc.
+
   
           const biconomyPaymaster =
           biconomySmartAccount.paymaster as IHybridPaymaster<SponsorUserOperationDto>;
@@ -243,7 +207,7 @@ function calculateTransactionFee(amount: number): number {
     return 0.95; // For amounts above $150.01
 }
 
-async function sendToken1(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
+async function sendToken(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
     try {
         let user = await User.findOne({ walletAddress: senderAddress });
         console.log("Private Key:", user);
@@ -279,8 +243,6 @@ async function sendToken1(tokenAddress: string, recipientAddress: string, amount
         // Batch the transactions
         let partialUserOp = await biconomySmartAccount.buildUserOp([recipientTransaction, feeTransaction]);
 
-        // The remaining part of the code is similar
-        // Handle paymaster, send userOp, etc.
 
         const biconomyPaymaster =
         biconomySmartAccount.paymaster as IHybridPaymaster<SponsorUserOperationDto>;
