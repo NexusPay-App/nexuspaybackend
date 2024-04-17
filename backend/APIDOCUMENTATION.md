@@ -133,10 +133,75 @@ This endpoint authenticates a user by their phone number and password, returning
   - **Content:** `{ "error": "Failed to retrieve user information", "details": "Error message" }`
 
 
+### 4. Request Password Reset
 
-To create a well-structured and easily understandable documentation for your "Send" and "Pay" APIs, I'll format it similarly to the authentication documentation, focusing on endpoint details, parameters, and error handling. This will be essential for front-end integration.
+This endpoint is used to initiate a password reset process. It verifies the user's phone number, generates an OTP, and sends it to the registered phone number.
 
----
+- **URL**
+  ```
+  POST /password-reset/request
+  ```
+
+- **Data Params**
+  ```json
+  {
+    "phoneNumber": "user_phone_number"
+  }
+  ```
+
+- **Success Response**
+  - **Code:** 200
+  - **Content:**
+    ```json
+    {
+      "message": "OTP sent successfully. Please use it to reset your password."
+    }
+  ```
+
+- **Error Response**
+  - **Code:** 400 BAD REQUEST
+  - **Content:** `{ "message": "Phone number is required!" }`
+  - **Code:** 404 NOT FOUND
+  - **Content:** `{ "message": "User not found." }`
+  - **Code:** 500 INTERNAL SERVER ERROR
+  - **Content:** `{ "error": "Failed to send password reset OTP", "details": "Error message" }`
+
+### 5. Reset Password
+
+After receiving the OTP, this endpoint allows the user to reset their password by providing a new password along with the OTP received via SMS.
+
+- **URL**
+  ```
+  POST /password-reset
+  ```
+
+- **Data Params**
+  ```json
+  {
+    "phoneNumber": "user_phone_number",
+    "otp": "received_otp",
+    "newPassword": "new_password"
+  }
+  ```
+
+- **Success Response**
+  - **Code:** 200
+  - **Content:**
+    ```json
+    {
+      "message": "Password reset successfully. You can now login with your new password."
+    }
+  ```
+
+- **Error Response**
+  - **Code:** 400 BAD REQUEST
+  - **Content:** `{ "message": "Phone number, OTP, and new password are required!" }`
+  - **Code:** 400 BAD REQUEST
+  - **Content:** `{ "message": "Invalid or expired OTP." }`
+  - **Code:** 500 INTERNAL SERVER ERROR
+  - **Content:** `{ "error": "Failed to reset password", "details": "Error message" }`
+
+
 
 ## 2. Token Transaction API Documentation
 

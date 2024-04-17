@@ -1,22 +1,26 @@
 
+
 // import express from 'express';
-// import { loginUser, registerUser } from '../controllers/authController';
-// import { authenticateToken } from '../middleware/authMiddleware';
+// import { loginUser, registerUser, initiateRegisterUser } from '../controllers/authController';
+
 // const router = express.Router();
 
 // router.post('/login', loginUser);
-// router.post('/register', registerUser);
+// router.post('/register/initiate', initiateRegisterUser); // Step 1: Send OTP
+// router.post('/register', registerUser); // Step 2: Verify OTP and complete registration
 
 // export default router;
 
 
 import express from 'express';
-import { loginUser, registerUser, initiateRegisterUser } from '../controllers/authController';
+import { requestPasswordReset, resetPassword, loginUser, registerUser, initiateRegisterUser } from '../controllers/authController';
 
 const router = express.Router();
 
 router.post('/login', loginUser);
-router.post('/register/initiate', initiateRegisterUser); // Step 1: Send OTP
-router.post('/register', registerUser); // Step 2: Verify OTP and complete registration
+router.post('/register/initiate', initiateRegisterUser);
+router.post('/register', registerUser);
+router.post('/password-reset/request', requestPasswordReset);
+router.post('/password-reset', resetPassword);
 
 export default router;

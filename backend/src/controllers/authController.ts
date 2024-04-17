@@ -138,6 +138,57 @@ export const loginUser = async (req: Request, res: Response) => {
 };
 
 
+export const requestPasswordReset = async (req: Request, res: Response) => {
+  const { phoneNumber } = req.body;
+
+  if (!phoneNumber) {
+    return res.status(400).send({ message: "Phone number is required!" });
+  }
+
+  const user = await User.findOne({ phoneNumber: phoneNumber });
+  if (!user) {
+    return res.status(404).send({ message: "User not found." });
+  }
+
+  const otp = generateOTP();
+  otpStore[phoneNumber] = otp;
+
+  try {
+    await africastalking.SMS.send({
+      to: phoneNumber,
+      message: `Your password reset code is: ${otp}`,
+      from: 'NEXUSPAY'
+    });
+    return res.send({ message: "OTP sent successfully. Please use it to reset your password." });
+  } catch (error) {
+    return handleError(error, res, "Failed to send password reset OTP", 500);
+  }
+};
+
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const { phoneNumber, otp, newPassword } = req.body;
+
+  if (!phoneNumber || !otp || !newPassword) {
+    return res.status(400).send({ message: "Phone number, OTP, and new password are required!" });
+  }
+
+  if (otpStore[phoneNumber] !== otp) {
+    return res.status(400).send({ message: "Invalid or expired OTP." });
+  }
+
+  delete otpStore[phoneNumber];  // Clear the OTP as it's no longer needed
+
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await User.updateOne({ phoneNumber: phoneNumber }, { password: hashedPassword });
+    return res.send({ message: "Password reset successfully. You can now login with your new password." });
+  } catch (error) {
+    return handleError(error, res, "Failed to reset password", 500);
+  }
+};
+
+
 
 export async function createAccount() {
  
