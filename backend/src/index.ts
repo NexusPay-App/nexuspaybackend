@@ -14,6 +14,7 @@ import businessRoutes from './routes/businessRoutes';
 import tokenRoutes from './routes/tokenRoutes';
 import usdcRoutes from './routes/usdcRoutes';
 import { connect } from './config/database';
+import { Verification } from './models/verificationModel';
 
 const app = express();
 const PORT = 8000;
@@ -64,6 +65,28 @@ app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/token', tokenRoutes);
 app.use('/api/usdc', usdcRoutes);
+
+
+app.post('/api/verifications', async (req, res) => {
+  try {
+    const { providerId, providerName, proof, verified } = req.body;
+    const verification = new Verification({ providerId, providerName, proof, verified });
+    await verification.save();
+    res.status(201).send(verification);
+  } catch (error) {
+    res.status(400).send(error);
+  }
+});
+
+// Get all verifications (optional)
+app.get('/api/verifications', async (req, res) => {
+  try {
+    const verifications = await Verification.find();
+    res.status(200).send(verifications);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
 
 // Database connection
 connect().then(() => {
