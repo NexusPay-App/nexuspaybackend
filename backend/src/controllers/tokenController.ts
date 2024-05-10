@@ -7,6 +7,14 @@ import { ethers } from 'ethers';
 import { instanceAccount } from './authController';
 import fetch from "node-fetch";
 import { tokenContract } from '../config/constants';
+import AfricasTalking from 'africastalking';
+
+// Initialize Africa's Talking
+const africastalking = AfricasTalking({
+    apiKey: '5256d139ae09790bfacc4690e276fa6e0e0247299b9104d7c6c85f0f675bb83b',
+    username: 'NEXUSPAY'
+});
+
 
 export const send = async (req: Request, res: Response) => {
     const { tokenAddress, recipientIdentifier, amount, senderAddress } = req.body;
@@ -15,22 +23,67 @@ export const send = async (req: Request, res: Response) => {
     }
 
     let recipientAddress = recipientIdentifier;
+    let recipientPhone = '';
     if (!ethers.utils.isAddress(recipientIdentifier)) {
         const user = await User.findOne({ phoneNumber: recipientIdentifier });
         if (!user) {
             return res.status(404).send({ message: "Recipient not found!" });
         }
         recipientAddress = user.walletAddress;
+        recipientPhone = user.phoneNumber;
     }
 
     try {
         await sendToken(tokenAddress, recipientAddress, amount, senderAddress);
-        res.send({ message: 'Token sent successfully!' });
+
+        // Retrieve the sender's phone number from the database
+        const sender = await User.findOne({ walletAddress: senderAddress });
+        const senderPhone = sender ? sender.phoneNumber : '';
+
+        // Generate the current date and time
+        const currentDateTime = new Date().toLocaleString('en-US', {
+            month: 'numeric',
+            day: 'numeric',
+            year: '2-digit',
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: true
+        });
+
+        // Generate a pseudo-unique transaction code
+        const transactionCode = Math.random().toString(36).substring(2, 12);
+
+        // Format the amount for display
+        const amountDisplay = `${amount} USDC`;
+
+        // Compose SMS messages following the requested structure
+        const recipientMessage = `${transactionCode} Confirmed. ${amountDisplay} sent to you on ${currentDateTime}.`;
+        const senderMessage = `${transactionCode} Confirmed. ${amountDisplay} sent to ${recipientPhone} on ${currentDateTime}.`;
+
+        // Send SMS messages to both sender and recipient
+        if (senderPhone) {
+            await africastalking.SMS.send({
+                to: [senderPhone],
+                message: senderMessage,
+                from: 'NEXUSPAY'
+            });
+        }
+
+        if (recipientPhone) {
+            await africastalking.SMS.send({
+                to: [recipientPhone],
+                message: recipientMessage,
+                from: 'NEXUSPAY'
+            });
+        }
+
+        res.send({ message: 'Token sent successfully and SMS notifications delivered!' });
     } catch (error) {
         console.error("Error in send API:", error);
-        res.status(500).send({ message: 'Failed to send token.', error: error});
+        res.status(500).send({ message: 'Failed to send token or SMS notifications.', error: error });
     }
 };
+
 
 export const pay = async (req: Request, res: Response) => {
     const { tokenAddress, senderAddress, businessUniqueCode, amount, confirm } = req.body;

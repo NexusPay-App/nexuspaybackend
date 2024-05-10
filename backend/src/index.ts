@@ -69,14 +69,15 @@ app.use('/api/usdc', usdcRoutes);
 
 app.post('/api/verifications', async (req, res) => {
   try {
-    const { providerId, providerName, proof, verified } = req.body;
-    const verification = new Verification({ providerId, providerName, proof, verified });
+    const { providerId, providerName, phoneNumber, proof, verified } = req.body;
+    const verification = new Verification({ providerId, providerName, phoneNumber, proof, verified });
     await verification.save();
     res.status(201).send(verification);
   } catch (error) {
     res.status(400).send(error);
   }
 });
+
 
 // Get all verifications (optional)
 app.get('/api/verifications', async (req, res) => {
