@@ -16,6 +16,75 @@ const africastalking = AfricasTalking({
 });
 
 
+// export const send = async (req: Request, res: Response) => {
+//     const { tokenAddress, recipientIdentifier, amount, senderAddress } = req.body;
+//     if (!tokenAddress || !recipientIdentifier || !amount || !senderAddress) {
+//         return res.status(400).send({ message: "Required parameters are missing!" });
+//     }
+
+//     let recipientAddress = recipientIdentifier;
+//     let recipientPhone = '';
+//     if (!ethers.utils.isAddress(recipientIdentifier)) {
+//         const user = await User.findOne({ phoneNumber: recipientIdentifier });
+//         if (!user) {
+//             return res.status(404).send({ message: "Recipient not found!" });
+//         }
+//         recipientAddress = user.walletAddress;
+//         recipientPhone = user.phoneNumber;
+//     }
+
+//     try {
+//         await sendToken(tokenAddress, recipientAddress, amount, senderAddress);
+
+//         // Retrieve the sender's phone number from the database
+//         const sender = await User.findOne({ walletAddress: senderAddress });
+//         const senderPhone = sender ? sender.phoneNumber : '';
+
+//         // Generate the current date and time
+//         const currentDateTime = new Date().toLocaleString('en-US', {
+//             month: 'numeric',
+//             day: 'numeric',
+//             year: '2-digit',
+//             hour: 'numeric',
+//             minute: 'numeric',
+//             hour12: true
+//         });
+
+//         // Generate a pseudo-unique transaction code
+//         const transactionCode = Math.random().toString(36).substring(2, 12);
+
+//         // Format the amount for display
+//         const amountDisplay = `${amount} USDC`;
+
+//         // Compose SMS messages following the requested structure
+//         const recipientMessage = `${transactionCode} Confirmed. ${amountDisplay} sent to you on ${currentDateTime}.`;
+//         const senderMessage = `${transactionCode} Confirmed. ${amountDisplay} sent to ${recipientPhone} on ${currentDateTime}.`;
+
+//         // Send SMS messages to both sender and recipient
+//         if (senderPhone) {
+//             await africastalking.SMS.send({
+//                 to: [senderPhone],
+//                 message: senderMessage,
+//                 from: 'NEXUSPAY'
+//             });
+//         }
+
+//         if (recipientPhone) {
+//             await africastalking.SMS.send({
+//                 to: [recipientPhone],
+//                 message: recipientMessage,
+//                 from: 'NEXUSPAY'
+//             });
+//         }
+
+//         res.send({ message: 'Token sent successfully and SMS notifications delivered!' });
+//     } catch (error) {
+//         console.error("Error in send API:", error);
+//         res.status(500).send({ message: 'Failed to send token or SMS notifications.', error: error });
+//     }
+// };
+
+
 export const send = async (req: Request, res: Response) => {
     const { tokenAddress, recipientIdentifier, amount, senderAddress } = req.body;
     if (!tokenAddress || !recipientIdentifier || !amount || !senderAddress) {
@@ -40,15 +109,18 @@ export const send = async (req: Request, res: Response) => {
         const sender = await User.findOne({ walletAddress: senderAddress });
         const senderPhone = sender ? sender.phoneNumber : '';
 
-        // Generate the current date and time
-        const currentDateTime = new Date().toLocaleString('en-US', {
+        // Generate the current date and time in Kenyan timezone
+        const formatter = new Intl.DateTimeFormat('en-KE', {
             month: 'numeric',
             day: 'numeric',
             year: '2-digit',
             hour: 'numeric',
             minute: 'numeric',
-            hour12: true
+            second: 'numeric',
+            hour12: true,
+            timeZone: 'Africa/Nairobi'
         });
+        const currentDateTime = formatter.format(new Date());
 
         // Generate a pseudo-unique transaction code
         const transactionCode = Math.random().toString(36).substring(2, 12);
@@ -57,13 +129,13 @@ export const send = async (req: Request, res: Response) => {
         const amountDisplay = `${amount} USDC`;
 
         // Compose SMS messages following the requested structure
-        const recipientMessage = `${transactionCode} Confirmed. ${amountDisplay} sent to you on ${currentDateTime}.`;
+        const recipientMessage = `${transactionCode} Confirmed. ${amountDisplay} Received from ${senderPhone} on ${currentDateTime}.`;
         const senderMessage = `${transactionCode} Confirmed. ${amountDisplay} sent to ${recipientPhone} on ${currentDateTime}.`;
 
         // Send SMS messages to both sender and recipient
         if (senderPhone) {
             await africastalking.SMS.send({
-                to: [senderPhone],
+    to: [senderPhone],
                 message: senderMessage,
                 from: 'NEXUSPAY'
             });
@@ -71,7 +143,7 @@ export const send = async (req: Request, res: Response) => {
 
         if (recipientPhone) {
             await africastalking.SMS.send({
-                to: [recipientPhone],
+    to: [recipientPhone],
                 message: recipientMessage,
                 from: 'NEXUSPAY'
             });
