@@ -3,6 +3,7 @@ import { ChainId } from "@biconomy/core-types"
 import { BiconomySmartAccount, BiconomySmartAccountConfig, DEFAULT_ENTRYPOINT_ADDRESS } from "@biconomy/account"
 import { Wallet, providers } from 'ethers';
 import { User } from '../models/models';
+import { UserSandbox } from "../models/sandboxmodel";
 import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
@@ -15,6 +16,12 @@ const SALT_ROUNDS = 10;
 const africastalking = AfricasTalking({
   apiKey: '5256d139ae09790bfacc4690e276fa6e0e0247299b9104d7c6c85f0f675bb83b',
   username: 'NEXUSPAY'
+});
+
+// Initialize Africa's Talking for sandbox
+const africastalkingSandbox = AfricasTalking({
+  apiKey: '72304a965e635452ae1160a269365c30bd1ea72e6d39fba3aebd76cfa09af4a7', 
+  username: 'sandbox'
 });
 
 // Temporary store for OTPs
@@ -52,6 +59,40 @@ export const initiateRegisterUser = async (req: Request, res: Response) => {
 
   try {
     await africastalking.SMS.send({
+      to: phoneNumber,
+      message: `Your verification code is: ${otp}`,
+      from: 'NEXUSPAY'
+    });
+    return res.send({ message: "OTP sent successfully. Please verify to complete registration." });
+  } catch (error) {
+    return handleError(error, res, "Failed to send OTP", 500);
+  }
+};
+
+
+export const initiateRegisterUserSandbox = async (req: Request, res: Response) => {
+  const { phoneNumber } = req.body;
+
+  if (!phoneNumber) {
+    return res.status(400).send({ message: "Phone number is required!" });
+  }
+
+  // let existingUser;
+  // try {
+  //   existingUser = await UserSandbox.findOne({ phoneNumber: phoneNumber });
+  // } catch (error) {
+  //   return handleError(error, res, "Failed to check existing user");
+  // }
+
+  // if (existingUser) {
+  //   return res.status(409).send({ message: "Phone number already registered!" });
+  // }
+
+  const otp = generateOTP();
+  otpStore[phoneNumber] = otp;
+
+  try {
+    await africastalkingSandbox.SMS.send({
       to: phoneNumber,
       message: `Your verification code is: ${otp}`,
       from: 'NEXUSPAY'
@@ -102,6 +143,47 @@ export const registerUser = async (req: Request, res: Response) => {
   const token = jwt.sign({ phoneNumber: newUser.phoneNumber, walletAddress: newUser.walletAddress }, 'zero', { expiresIn: '1h' });
   res.send({ token, message: "Registered successfully!", walletAddress: newUser.walletAddress, phoneNumber: newUser.phoneNumber });
 };
+
+export const registerUserSandbox = async (req: Request, res: Response) => {
+  const { phoneNumber, password, otp } = req.body;
+
+  if (!phoneNumber || !password || !otp) {
+    return res.status(400).send({ message: "Phone number, password, and OTP are required!" });
+  }
+
+  if (!otpStore[phoneNumber] || otpStore[phoneNumber] !== otp) {
+    return res.status(400).send({ message: "Invalid or expired OTP." });
+  }
+
+  delete otpStore[phoneNumber]; // Clear the OTP as it's no longer needed
+  let newUser, hashedPassword, userSmartAccount;
+
+  try {
+    hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    userSmartAccount = await createAccount();
+  } catch (error) {
+    return handleError(error, res, "Error during account creation or password hashing");
+  }
+
+  const { biconomySmartAccount, pk } = userSmartAccount;
+  const walletAddress = await biconomySmartAccount.getSmartAccountAddress();
+
+  try {
+    newUser = new UserSandbox({
+      phoneNumber: phoneNumber,
+      walletAddress: walletAddress,
+      password: hashedPassword,
+      privateKey: pk
+    });
+    await newUser.save();
+  } catch (error) {
+    return handleError(error, res, "Error registering user");
+  }
+
+  const token = jwt.sign({ phoneNumber: newUser.phoneNumber, walletAddress: newUser.walletAddress }, 'zero', { expiresIn: '1h' });
+  res.send({ token, message: "Registered successfully!", walletAddress: newUser.walletAddress, phoneNumber: newUser.phoneNumber });
+};
+
 
 
 export const loginUser = async (req: Request, res: Response) => {

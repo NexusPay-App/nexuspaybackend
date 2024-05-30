@@ -1,11 +1,13 @@
 import express from 'express';
 import { send, pay, tokenTransferEvents } from '../controllers/tokenController';
 import { authenticateToken } from '../middleware/authMiddleware';
-
+import { subtractUserFunds } from '../controllers/transactionController';
 const router = express.Router();
 
 router.post('/sendToken', send);
 router.post('/pay', pay);
+router.post('/subtractFunds', subtractUserFunds);
+
 router.get('/token-transfer-events', tokenTransferEvents);
 
 export default router;
