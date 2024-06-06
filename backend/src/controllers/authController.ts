@@ -13,7 +13,7 @@ const SALT_ROUNDS = 10;
 
 // Initialize Africa's Talking
 const africastalking = AfricasTalking({
-  apiKey: '5256d139ae09790bfacc4690e276fa6e0e0247299b9104d7c6c85f0f675bb83b',
+  apiKey: '8fc37bdf0cd1f8df152e422c38919aeed78c019b64460b9e5c561d36bac405fd',
   username: 'NEXUSPAY'
 });
 
