@@ -8,7 +8,14 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { bundler, paymaster, provider } from "../config/constants";
 import AfricasTalking from 'africastalking';
+import { privateKeyAccount, smartWallet } from "thirdweb/wallets";
+import dotenv from "dotenv";
+import { getContract, sendTransaction } from "thirdweb";
+import {  arbitrumSepolia } from "thirdweb/chains";
+import client from "../config/thirdwebClient";
 
+
+dotenv.config();
 const SALT_ROUNDS = 10; 
 
 // Initialize Africa's Talking
@@ -64,17 +71,17 @@ export const initiateRegisterUser = async (req: Request, res: Response) => {
 
 
 export const registerUser = async (req: Request, res: Response) => {
-  const { phoneNumber, password, otp } = req.body;
+  const { phoneNumber, password } = req.body;
 
-  if (!phoneNumber || !password || !otp) {
-    return res.status(400).send({ message: "Phone number, password, and OTP are required!" });
-  }
+  // if (!phoneNumber || !password || !otp) {
+  //   return res.status(400).send({ message: "Phone number, password, and OTP are required!" });
+  // }
 
-  if (!otpStore[phoneNumber] || otpStore[phoneNumber] !== otp) {
-    return res.status(400).send({ message: "Invalid or expired OTP." });
-  }
+  // if (!otpStore[phoneNumber] || otpStore[phoneNumber] !== otp) {
+  //   return res.status(400).send({ message: "Invalid or expired OTP." });
+  // }
 
-  delete otpStore[phoneNumber]; // Clear the OTP as it's no longer needed
+  // delete otpStore[phoneNumber]; // Clear the OTP as it's no longer needed
   let newUser, hashedPassword, userSmartAccount;
 
   try {
@@ -84,13 +91,14 @@ export const registerUser = async (req: Request, res: Response) => {
     return handleError(error, res, "Error during account creation or password hashing");
   }
 
-  const { biconomySmartAccount, pk } = userSmartAccount;
+  const { biconomySmartAccount, pk, celowallet } = userSmartAccount;
   const walletAddress = await biconomySmartAccount.getSmartAccountAddress();
 
   try {
     newUser = new User({
       phoneNumber: phoneNumber,
       walletAddress: walletAddress,
+      celoWalletAddress: celowallet,
       password: hashedPassword,
       privateKey: pk
     });
@@ -99,8 +107,8 @@ export const registerUser = async (req: Request, res: Response) => {
     return handleError(error, res, "Error registering user");
   }
 
-  const token = jwt.sign({ phoneNumber: newUser.phoneNumber, walletAddress: newUser.walletAddress }, 'zero', { expiresIn: '1h' });
-  res.send({ token, message: "Registered successfully!", walletAddress: newUser.walletAddress, phoneNumber: newUser.phoneNumber });
+  const token = jwt.sign({ phoneNumber: newUser.phoneNumber, walletAddress: newUser.walletAddress, celoWallet: newUser.celoWalletAddress }, 'zero', { expiresIn: '1h' });
+  res.send({ token, message: "Registered successfully!", arbitrumWallet: newUser.walletAddress, celoWallet: newUser.celoWalletAddress, phoneNumber: newUser.phoneNumber });
 };
 
 
@@ -196,6 +204,8 @@ export async function createAccount() {
     const pk = newWallet.privateKey
     const wallet = new Wallet(pk, provider);
   
+    const celowallet = await createAccountCelo(pk)
+
     const biconomySmartAccountConfig: BiconomySmartAccountConfig = {
       signer: wallet,
       chainId: ChainId.ARBITRUM_ONE_MAINNET,
@@ -206,9 +216,9 @@ export async function createAccount() {
     let biconomySmartAccount = new BiconomySmartAccount(biconomySmartAccountConfig)
     biconomySmartAccount =  await biconomySmartAccount.init()
     
-    console.log("owner: ", biconomySmartAccount.owner)
-    console.log("address: ", await biconomySmartAccount.getSmartAccountAddress())
-    return {biconomySmartAccount, pk};
+    // console.log("owner: ", biconomySmartAccount.owner)
+    console.log("arbitrum: ", await biconomySmartAccount.getSmartAccountAddress())
+    return {biconomySmartAccount, celowallet, pk};
     }
 
     export async function instanceAccount(prikey: string) {
@@ -229,7 +239,31 @@ export async function createAccount() {
       return biconomySmartAccount;
     }
 
-
+    export async function createAccountCelo(privatekey: String) {
+      // Create a new EOA
+      const personalAccount = privateKeyAccount({
+        client,
+        privateKey: privatekey as string,
+      });
+    
+      // console.log("Personal account address:", personalAccount.address);
+    
+      // Configure the smart wallet
+      const wallet = smartWallet({
+        chain: arbitrumSepolia,
+        sponsorGas: false,
+      });
+    
+      // Connect the smart wallet
+      const smartAccount = await wallet.connect({
+        client,
+        personalAccount,
+      });
+    
+      console.log("celo:", smartAccount.address);
+    
+      return smartAccount.address;
+    }
 
 // Utility function to handle errors
 const handleError = (error: any, res: Response, message: string, statusCode: number = 500) => {
