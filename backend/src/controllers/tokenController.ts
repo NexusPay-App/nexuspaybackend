@@ -8,6 +8,15 @@ import { instanceAccount } from './authController';
 import fetch from "node-fetch";
 import { tokenContract } from '../config/constants';
 import AfricasTalking from 'africastalking';
+import { privateKeyAccount, smartWallet } from "thirdweb/wallets";
+import dotenv from "dotenv";
+import { getContract, sendTransaction } from "thirdweb";
+import {  arbitrumSepolia } from "thirdweb/chains";
+import {  transfer } from "thirdweb/extensions/erc20";
+import client from '../config/thirdwebClient';
+
+
+dotenv.config();
 
 // Initialize Africa's Talking
 const africastalking = AfricasTalking({
@@ -17,8 +26,8 @@ const africastalking = AfricasTalking({
 
 
 // export const send = async (req: Request, res: Response) => {
-//     const { tokenAddress, recipientIdentifier, amount, senderAddress } = req.body;
-//     if (!tokenAddress || !recipientIdentifier || !amount || !senderAddress) {
+//     const { tokenAddress, recipientIdentifier, amount, senderAddress, chain } = req.body;
+//     if (!tokenAddress || !recipientIdentifier || !amount || !senderAddress || !chain) {
 //         return res.status(400).send({ message: "Required parameters are missing!" });
 //     }
 
@@ -40,15 +49,18 @@ const africastalking = AfricasTalking({
 //         const sender = await User.findOne({ walletAddress: senderAddress });
 //         const senderPhone = sender ? sender.phoneNumber : '';
 
-//         // Generate the current date and time
-//         const currentDateTime = new Date().toLocaleString('en-US', {
+//         // Generate the current date and time in Kenyan timezone
+//         const formatter = new Intl.DateTimeFormat('en-KE', {
 //             month: 'numeric',
 //             day: 'numeric',
 //             year: '2-digit',
 //             hour: 'numeric',
 //             minute: 'numeric',
-//             hour12: true
+//             second: 'numeric',
+//             hour12: true,
+//             timeZone: 'Africa/Nairobi'
 //         });
+//         const currentDateTime = formatter.format(new Date());
 
 //         // Generate a pseudo-unique transaction code
 //         const transactionCode = Math.random().toString(36).substring(2, 12);
@@ -57,13 +69,13 @@ const africastalking = AfricasTalking({
 //         const amountDisplay = `${amount} USDC`;
 
 //         // Compose SMS messages following the requested structure
-//         const recipientMessage = `${transactionCode} Confirmed. ${amountDisplay} sent to you on ${currentDateTime}.`;
+//         const recipientMessage = `${transactionCode} Confirmed. ${amountDisplay} Received from ${senderPhone} on ${currentDateTime}.`;
 //         const senderMessage = `${transactionCode} Confirmed. ${amountDisplay} sent to ${recipientPhone} on ${currentDateTime}.`;
 
 //         // Send SMS messages to both sender and recipient
 //         if (senderPhone) {
 //             await africastalking.SMS.send({
-//                 to: [senderPhone],
+//     to: [senderPhone],
 //                 message: senderMessage,
 //                 from: 'NEXUSPAY'
 //             });
@@ -71,7 +83,7 @@ const africastalking = AfricasTalking({
 
 //         if (recipientPhone) {
 //             await africastalking.SMS.send({
-//                 to: [recipientPhone],
+//     to: [recipientPhone],
 //                 message: recipientMessage,
 //                 from: 'NEXUSPAY'
 //             });
@@ -84,10 +96,9 @@ const africastalking = AfricasTalking({
 //     }
 // };
 
-
 export const send = async (req: Request, res: Response) => {
-    const { tokenAddress, recipientIdentifier, amount, senderAddress } = req.body;
-    if (!tokenAddress || !recipientIdentifier || !amount || !senderAddress) {
+    const { tokenAddress, recipientIdentifier, amount, senderAddress, chain } = req.body;
+    if (!tokenAddress || !recipientIdentifier || !amount || !senderAddress || !chain) {
         return res.status(400).send({ message: "Required parameters are missing!" });
     }
 
@@ -98,12 +109,24 @@ export const send = async (req: Request, res: Response) => {
         if (!user) {
             return res.status(404).send({ message: "Recipient not found!" });
         }
-        recipientAddress = user.walletAddress;
+        if (chain === 'celo') {
+            recipientAddress = user.celoWalletAddress;
+        } else if (chain === 'arbitrum') {
+            recipientAddress = user.walletAddress;
+        } else {
+            return res.status(400).send({ message: "Unsupported chain!" });
+        }
         recipientPhone = user.phoneNumber;
     }
 
     try {
-        await sendToken(tokenAddress, recipientAddress, amount, senderAddress);
+        if (chain === 'celo') {
+            await sendTokenCelo(tokenAddress, recipientAddress, amount, senderAddress);
+        } else if (chain === 'arbitrum') {
+            await sendToken(tokenAddress, recipientAddress, amount, senderAddress);
+        } else {
+            return res.status(400).send({ message: "Unsupported chain!" });
+        }
 
         // Retrieve the sender's phone number from the database
         const sender = await User.findOne({ walletAddress: senderAddress });
@@ -135,7 +158,7 @@ export const send = async (req: Request, res: Response) => {
         // Send SMS messages to both sender and recipient
         if (senderPhone) {
             await africastalking.SMS.send({
-    to: [senderPhone],
+                to: [senderPhone],
                 message: senderMessage,
                 from: 'NEXUSPAY'
             });
@@ -143,7 +166,7 @@ export const send = async (req: Request, res: Response) => {
 
         if (recipientPhone) {
             await africastalking.SMS.send({
-    to: [recipientPhone],
+                to: [recipientPhone],
                 message: recipientMessage,
                 from: 'NEXUSPAY'
             });
@@ -155,6 +178,7 @@ export const send = async (req: Request, res: Response) => {
         res.status(500).send({ message: 'Failed to send token or SMS notifications.', error: error });
     }
 };
+
 
 
 export const pay = async (req: Request, res: Response) => {
@@ -402,3 +426,50 @@ async function sendToken(tokenAddress: string, recipientAddress: string, amount:
         console.error("Error in sendToken:", error);
       }
     }
+
+
+    export async function sendTokenCelo(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
+      //TODO: ADD fee model
+        let user = await User.findOne({ celoWalletAddress: senderAddress });
+        console.log("Private Key:", user);
+
+        const personalAccount = privateKeyAccount({
+          client,
+          privateKey: user?.privateKey as string,
+        });
+      
+      
+        const wallet =  smartWallet({
+          chain: arbitrumSepolia,
+          sponsorGas: false,
+        });
+      
+        // Connect the smart wallet
+        const smartAccount = await wallet.connect({
+          client,
+          personalAccount,
+        });
+      
+        console.log("Smart account address:", smartAccount.address);
+      
+        const contract = getContract({
+          client,
+          chain: arbitrumSepolia,
+          address: tokenAddress,
+         });
+         
+          
+        const transaction = transfer({
+            contract,
+            to: recipientAddress,
+            amount: amount,
+          });
+        
+         
+        await sendTransaction({
+          transaction,
+          account: smartAccount,
+        });
+      
+      
+      }
