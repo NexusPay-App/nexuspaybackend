@@ -20,7 +20,7 @@ dotenv.config();
 
 // Initialize Africa's Talking
 const africastalking = AfricasTalking({
-    apiKey: '5256d139ae09790bfacc4690e276fa6e0e0247299b9104d7c6c85f0f675bb83b',
+    apiKey: '8fc37bdf0cd1f8df152e422c38919aeed78c019b64460b9e5c561d36bac405fd',
     username: 'NEXUSPAY'
 });
 
@@ -101,7 +101,7 @@ export const send = async (req: Request, res: Response) => {
     if (!tokenAddress || !recipientIdentifier || !amount || !senderAddress || !chain) {
         return res.status(400).send({ message: "Required parameters are missing!" });
     }
-
+console.log(`${amount}, ${senderAddress}, ${recipientIdentifier}, ${chain}`)
     let recipientAddress = recipientIdentifier;
     let recipientPhone = '';
     if (!ethers.utils.isAddress(recipientIdentifier)) {

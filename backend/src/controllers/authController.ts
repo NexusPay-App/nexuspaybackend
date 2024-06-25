@@ -12,18 +12,28 @@ import { privateKeyAccount, smartWallet } from "thirdweb/wallets";
 import dotenv from "dotenv";
 import { getContract, sendTransaction } from "thirdweb";
 import {  arbitrumSepolia } from "thirdweb/chains";
+import { defineChain } from "thirdweb";
 import client from "../config/thirdwebClient";
 
 
 dotenv.config();
 const SALT_ROUNDS = 10; 
+const celo = defineChain(42220);
+
+// console.log(`chain is ${celo}`)
+
+// Log the entire object as a JSON string
+console.log(`chain is ${JSON.stringify(celo, null, 2)}`);
+
+// Log specific properties if you want to be more specific
+console.log(`chain name is ${celo.name}`);
+console.log(`chain arbitrum ${JSON.stringify(arbitrumSepolia, null, 2)}`);
 
 // Initialize Africa's Talking
 const africastalking = AfricasTalking({
-  apiKey: '5256d139ae09790bfacc4690e276fa6e0e0247299b9104d7c6c85f0f675bb83b',
+  apiKey: '8fc37bdf0cd1f8df152e422c38919aeed78c019b64460b9e5c561d36bac405fd',
   username: 'NEXUSPAY'
 });
-
 // Temporary store for OTPs
 const otpStore: Record<string, string> = {};
 
@@ -118,7 +128,7 @@ export const loginUser = async (req: Request, res: Response) => {
   if (!phoneNumber || !password) {
     return res.status(400).send({ message: "Phone number and password are required!" });
   }
-
+console.log(`${phoneNumber} and passwod is ${password}`)
   let user;
   try {
     user = await User.findOne({ phoneNumber: phoneNumber });
@@ -142,7 +152,7 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 
   const token = jwt.sign({ phoneNumber: user.phoneNumber, walletAddress: user.walletAddress }, 'zero', { expiresIn: '1h' });
-  res.send({ token, message: "Logged in successfully!", walletAddress: user.walletAddress, phoneNumber: user.phoneNumber });
+  res.send({ token, message: "Logged in successfully!", arbitrumWallet: user.walletAddress, celoWallet: user.celoWalletAddress, phoneNumber: user.phoneNumber });
 };
 
 
@@ -250,7 +260,7 @@ export async function createAccount() {
     
       // Configure the smart wallet
       const wallet = smartWallet({
-        chain: arbitrumSepolia,
+        chain: celo,
         sponsorGas: false,
       });
     
