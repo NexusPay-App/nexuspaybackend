@@ -13,6 +13,7 @@ import dotenv from "dotenv";
 import { getContract, sendTransaction } from "thirdweb";
 import {  arbitrumSepolia } from "thirdweb/chains";
 import {  transfer } from "thirdweb/extensions/erc20";
+import { defineChain } from "thirdweb";
 import client from '../config/thirdwebClient';
 
 
@@ -23,6 +24,7 @@ const africastalking = AfricasTalking({
     apiKey: '8fc37bdf0cd1f8df152e422c38919aeed78c019b64460b9e5c561d36bac405fd',
     username: 'NEXUSPAY'
 });
+const celo = defineChain(42220);
 
 
 // export const send = async (req: Request, res: Response) => {
@@ -440,8 +442,8 @@ async function sendToken(tokenAddress: string, recipientAddress: string, amount:
       
       
         const wallet =  smartWallet({
-          chain: arbitrumSepolia,
-          sponsorGas: false,
+          chain: celo,
+          sponsorGas: true,
         });
       
         // Connect the smart wallet
@@ -454,7 +456,7 @@ async function sendToken(tokenAddress: string, recipientAddress: string, amount:
       
         const contract = getContract({
           client,
-          chain: arbitrumSepolia,
+          chain: celo,
           address: tokenAddress,
          });
          

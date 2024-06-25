@@ -20,6 +20,12 @@ dotenv.config();
 const SALT_ROUNDS = 10; 
 const celo = defineChain(42220);
 
+
+const myChain = defineChain({
+  id: 42220,
+  rpc: "wss://forno.celo.org/ws"
+});
+
 // console.log(`chain is ${celo}`)
 
 // Log the entire object as a JSON string
@@ -81,17 +87,17 @@ export const initiateRegisterUser = async (req: Request, res: Response) => {
 
 
 export const registerUser = async (req: Request, res: Response) => {
-  const { phoneNumber, password } = req.body;
+  const { phoneNumber, password, otp } = req.body;
 
-  // if (!phoneNumber || !password || !otp) {
-  //   return res.status(400).send({ message: "Phone number, password, and OTP are required!" });
-  // }
+  if (!phoneNumber || !password || !otp) {
+    return res.status(400).send({ message: "Phone number, password, and OTP are required!" });
+  }
 
-  // if (!otpStore[phoneNumber] || otpStore[phoneNumber] !== otp) {
-  //   return res.status(400).send({ message: "Invalid or expired OTP." });
-  // }
+  if (!otpStore[phoneNumber] || otpStore[phoneNumber] !== otp) {
+    return res.status(400).send({ message: "Invalid or expired OTP." });
+  }
 
-  // delete otpStore[phoneNumber]; // Clear the OTP as it's no longer needed
+  delete otpStore[phoneNumber]; // Clear the OTP as it's no longer needed
   let newUser, hashedPassword, userSmartAccount;
 
   try {
