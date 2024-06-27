@@ -210,20 +210,31 @@ export const pay = async (req: Request, res: Response) => {
     }   
 };
 
-export const tokenTransferEvents = async (req: Request, res: Response) => {
-    const { address } = req.query;
-    if (!address) {
-        return res.status(400).send('Address is required as a query parameter.');
-    }
 
-    try {
-        const events = await getAllTokenTransferEvents(address as string);
-        res.json(events);
-    } catch (error) {
-        console.error('Error fetching token transfer events:', error);
-        res.status(500).send({ message: 'Internal server error', error: error});
-    }
+export const tokenTransferEvents = async (req: Request, res: Response) => {
+  const { address, chain } = req.query;
+
+  if (!address) {
+    return res.status(400).send('Address is required as a query parameter.');
+  }
+
+  if (!chain) {
+    return res.status(400).send('Chain is required as a query parameter.');
+  }
+
+  if (!['arbitrum', 'celo'].includes(chain as string)) {
+    return res.status(400).send('Invalid chain parameter. Supported chains are arbitrum and celo.');
+  }
+
+  try {
+    const events = await getAllTokenTransferEvents(chain as Chain, address as string);
+    res.json(events);
+  } catch (error) {
+    console.error('Error fetching token transfer events:', error);
+    res.status(500).send({ message: 'Internal server error', error: error });
+  }
 };
+
 
 interface TokenTransferEvent {
     blockNumber: string;
@@ -247,27 +258,62 @@ interface TokenTransferEvent {
     confirmations: string;
 }
 
-async function getAllTokenTransferEvents(walletAddress: string): Promise<TokenTransferEvent[]> {
-    const baseURL = 'https://api.arbiscan.io/api';
-    const apiKey = '44UDQIEKU98ZQ559DWX4ZUZJC5EBK8XUU4';
+// async function getAllTokenTransferEvents(walletAddress: string): Promise<TokenTransferEvent[]> {
+//     const baseURL = 'https://api.arbiscan.io/api';
+//     const apiKey = '44UDQIEKU98ZQ559DWX4ZUZJC5EBK8XUU4';
+//     const url = `${baseURL}?module=account&action=tokentx&address=${walletAddress}&page=1&offset=5&sort=desc&apikey=${apiKey}`;
+
+//     try {
+//         const response = await fetch(url);
+//         if (!response.ok) {
+//             throw new Error('Failed to fetch data from API');
+//         }
+
+//         const data = await response.json();
+//         if (data.status !== '1') {
+//             throw new Error(data.message);
+//         }
+//         return data.result as TokenTransferEvent[];
+//     } catch (error) {
+//         console.error('Error in getAllTokenTransferEvents:', error);
+//         throw error;  // Re-throw to be caught by the controller error handler.
+//     }
+// }
+type Chain = 'arbitrum' | 'celo';
+
+
+async function getAllTokenTransferEvents(chain: Chain, walletAddress: string): Promise<TokenTransferEvent[]> {
+    const apiEndpoints = {
+      arbitrum: 'https://api.arbiscan.io/api',
+      celo: 'https://api.celoscan.io/api',
+    };
+  
+    const apiKeys = {
+      arbitrum: '44UDQIEKU98ZQ559DWX4ZUZJC5EBK8XUU4',
+      celo: 'Z349YD6992FHPR3V7SMTS62X1TS52EV5KT',  // Replace with your actual CeloScan API key
+    };
+  
+    const baseURL = apiEndpoints[chain];
+    const apiKey = apiKeys[chain];
     const url = `${baseURL}?module=account&action=tokentx&address=${walletAddress}&page=1&offset=5&sort=desc&apikey=${apiKey}`;
-
+  
     try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error('Failed to fetch data from API');
-        }
-
-        const data = await response.json();
-        if (data.status !== '1') {
-            throw new Error(data.message);
-        }
-        return data.result as TokenTransferEvent[];
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch data from API');
+      }
+  
+      const data = await response.json();
+      if (data.status !== '1') {
+        throw new Error(data.message);
+      }
+      return data.result as TokenTransferEvent[];
     } catch (error) {
-        console.error('Error in getAllTokenTransferEvents:', error);
-        throw error;  // Re-throw to be caught by the controller error handler.
+      console.error('Error in getAllTokenTransferEvents:', error);
+      throw error;  // Re-throw to be caught by the controller error handler.
     }
-}
+  }
+
 
 // Other business logic functions like sendToken, payToken etc. go here.
 

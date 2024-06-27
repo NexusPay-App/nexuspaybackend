@@ -21,3 +21,27 @@ export const bundler: IBundler = new Bundler({
  export const paymaster: IPaymaster = new BiconomyPaymaster({
     paymasterUrl: "https://paymaster.biconomy.io/api/v1/42161/tspCruvJC.e29dfbd1-6a60-4c2a-b0c8-5614640e0e06",
   });
+
+
+
+export function getProvider(chain: string): ethers.providers.Provider {
+  switch (chain) {
+    case 'arbitrum':
+      return new ethers.providers.JsonRpcProvider('https://arb-mainnet.g.alchemy.com/v2/BsIntFyzOmCo53B6JR2WdYNk-j_4g2TM');
+    case 'celo':
+      return new ethers.providers.JsonRpcProvider('https://forno.celo.org');
+    default:
+      throw new Error(`Unsupported chain: ${chain}`);
+  }
+}
+
+export function getTokenAddress(chain: string): string {
+  switch (chain) {
+    case 'arbitrum':
+      return '0xaf88d065e77c8cC2239327C5EDb3A432268e5831'; // Arbitrum USDC address
+    case 'celo':
+      return '0xcebA9300f2b948710d2653dD7B07f33A8B32118C'; // Celo USDC address
+    default:
+      throw new Error(`Unsupported chain: ${chain}`);
+  }
+}
