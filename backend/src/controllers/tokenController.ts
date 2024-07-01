@@ -15,7 +15,7 @@ import {  arbitrumSepolia } from "thirdweb/chains";
 import {  transfer } from "thirdweb/extensions/erc20";
 import { defineChain } from "thirdweb";
 import client from '../config/thirdwebClient';
-
+import { FuseSDK } from '@fuseio/fusebox-web-sdk';
 
 dotenv.config();
 
@@ -520,4 +520,27 @@ async function sendToken(tokenAddress: string, recipientAddress: string, amount:
         });
       
       
+      }
+
+
+      export async function sendTokenFuse(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
+     
+        let user = await User.findOne({ fuseWalletAddress: senderAddress });
+        console.log("user is :", user);
+
+        // const tokenAddress = "0x28C3d1cD466Ba22f6cae51b1a4692a831696391A"
+        const apiKey = process.env.FUSE_PUBLIC_API_KEY as string;
+        const credentials = new ethers.Wallet(user?.privateKey as string,);
+        const fuseSDK = await FuseSDK.init(apiKey, credentials, {
+          withPaymaster: true,
+        });
+        // const amount2 = ethers.parseUnits(amount, 6)
+        const res = await fuseSDK.transferToken(tokenAddress, recipientAddress, amount);
+        console.log(`UserOpHash: ${res?.userOpHash}`);
+        console.log("Waiting for transaction...");
+      
+        const receipt = await res?.wait();
+        console.log(
+          `User operation hash: https://explorer.fuse.io/tx/${receipt?.transactionHash}`
+        );
       }

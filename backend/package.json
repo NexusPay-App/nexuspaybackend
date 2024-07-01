@@ -30,6 +30,7 @@
     "@biconomy/common": "^3.1.1-alpha.0",
     "@biconomy/core-types": "^3.1.1-alpha.0",
     "@biconomy/paymaster": "^3.1.1-alpha.0",
+    "@fuseio/fusebox-web-sdk": "^0.2.5",
     "@pushprotocol/restapi": "^1.4.31",
     "@types/body-parser": "^1.19.3",
     "@types/mongodb": "^4.0.7",
