@@ -160,7 +160,7 @@ console.log(`${phoneNumber} and passwod is ${password}`)
   }
 
   const token = jwt.sign({ phoneNumber: user.phoneNumber, walletAddress: user.walletAddress }, 'zero', { expiresIn: '1h' });
-  res.send({ token, message: "Logged in successfully!", arbitrumWallet: user.walletAddress, celoWallet: user.celoWalletAddress, phoneNumber: user.phoneNumber });
+  res.send({ token, message: "Logged in successfully!", arbitrumWallet: user.walletAddress, celoWallet: user.celoWalletAddress, fuseWallet: user.fuseWalletAddress, phoneNumber: user.phoneNumber });
 };
 
 

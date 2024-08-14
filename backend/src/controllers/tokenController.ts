@@ -6,7 +6,7 @@ import { IHybridPaymaster, PaymasterMode, SponsorUserOperationDto } from '@bicon
 import { ethers } from 'ethers';
 import { instanceAccount } from './authController';
 import fetch from "node-fetch";
-import { tokenContract } from '../config/constants';
+import { tokenAddress, tokenContract } from '../config/constants';
 import AfricasTalking from 'africastalking';
 import { privateKeyAccount, smartWallet } from "thirdweb/wallets";
 import dotenv from "dotenv";
@@ -15,7 +15,7 @@ import {  arbitrumSepolia } from "thirdweb/chains";
 import {  transfer } from "thirdweb/extensions/erc20";
 import { defineChain } from "thirdweb";
 import client from '../config/thirdwebClient';
-import { FuseSDK } from '@fuseio/fusebox-web-sdk';
+import { FuseSDK, WalletActionResult } from '@fuseio/fusebox-web-sdk';
 
 dotenv.config();
 
@@ -26,6 +26,9 @@ const africastalking = AfricasTalking({
 });
 const celo = defineChain(42220);
 
+const apiKey = process.env.FUSE_PUBLIC_API_KEY;
+const credentials = new ethers.Wallet("0x024b201993dbc4f5f4b328e8b75d106e3520eed6d7279844a07299193906bbc3");
+const fuse =  FuseSDK.init(apiKey as string, credentials);
 
 // export const send = async (req: Request, res: Response) => {
 //     const { tokenAddress, recipientIdentifier, amount, senderAddress, chain } = req.body;
@@ -115,6 +118,8 @@ console.log(`${amount}, ${senderAddress}, ${recipientIdentifier}, ${chain}`)
             recipientAddress = user.celoWalletAddress;
         } else if (chain === 'arbitrum') {
             recipientAddress = user.walletAddress;
+          } else if (chain === 'fuse') {
+            recipientAddress = user.fuseWalletAddress;
         } else {
             return res.status(400).send({ message: "Unsupported chain!" });
         }
@@ -126,6 +131,8 @@ console.log(`${amount}, ${senderAddress}, ${recipientIdentifier}, ${chain}`)
             await sendTokenCelo(tokenAddress, recipientAddress, amount, senderAddress);
         } else if (chain === 'arbitrum') {
             await sendToken(tokenAddress, recipientAddress, amount, senderAddress);
+          } else if (chain === 'fuse') {
+            await sendTokenFuse(tokenAddress, recipientAddress, amount, senderAddress);
         } else {
             return res.status(400).send({ message: "Unsupported chain!" });
         }
@@ -222,7 +229,7 @@ export const tokenTransferEvents = async (req: Request, res: Response) => {
     return res.status(400).send('Chain is required as a query parameter.');
   }
 
-  if (!['arbitrum', 'celo'].includes(chain as string)) {
+  if (!['arbitrum', 'celo', 'fuse'].includes(chain as string)) {
     return res.status(400).send('Invalid chain parameter. Supported chains are arbitrum and celo.');
   }
 
@@ -279,30 +286,82 @@ interface TokenTransferEvent {
 //         throw error;  // Re-throw to be caught by the controller error handler.
 //     }
 // }
-type Chain = 'arbitrum' | 'celo';
+type Chain = 'arbitrum' | 'celo' | 'fuse';
 
 
-async function getAllTokenTransferEvents(chain: Chain, walletAddress: string): Promise<TokenTransferEvent[]> {
-    const apiEndpoints = {
-      arbitrum: 'https://api.arbiscan.io/api',
-      celo: 'https://api.celoscan.io/api',
-    };
+// async function getAllTokenTransferEvents(chain: Chain, walletAddress: string): Promise<TokenTransferEvent[]> {
+//     const apiEndpoints = {
+//       arbitrum: 'https://api.arbiscan.io/api',
+//       celo: 'https://api.celoscan.io/api',
+//     };
   
-    const apiKeys = {
-      arbitrum: '44UDQIEKU98ZQ559DWX4ZUZJC5EBK8XUU4',
-      celo: 'Z349YD6992FHPR3V7SMTS62X1TS52EV5KT',  // Replace with your actual CeloScan API key
-    };
+//     const apiKeys = {
+//       arbitrum: '44UDQIEKU98ZQ559DWX4ZUZJC5EBK8XUU4',
+//       celo: 'Z349YD6992FHPR3V7SMTS62X1TS52EV5KT',  // Replace with your actual CeloScan API key
+//     };
   
+//     const baseURL = apiEndpoints[chain];
+//     const apiKey = apiKeys[chain];
+//     const url = `${baseURL}?module=account&action=tokentx&address=${walletAddress}&page=1&offset=5&sort=desc&apikey=${apiKey}`;
+  
+//     try {
+//       const response = await fetch(url);
+//       if (!response.ok) {
+//         throw new Error('Failed to fetch data from API');
+//       }
+  
+//       const data = await response.json();
+//       if (data.status !== '1') {
+//         throw new Error(data.message);
+//       }
+//       return data.result as TokenTransferEvent[];
+//     } catch (error) {
+//       console.error('Error in getAllTokenTransferEvents:', error);
+//       throw error;  // Re-throw to be caught by the controller error handler.
+//     }
+//   }
+
+async function getAllTokenTransferEvents(chain: Chain, walletAddress: string) {
+  const apiEndpoints = {
+    arbitrum: 'https://api.arbiscan.io/api',
+    celo: 'https://api.celoscan.io/api',
+  };
+
+  const apiKeys = {
+    arbitrum: '44UDQIEKU98ZQ559DWX4ZUZJC5EBK8XUU4',
+    celo: 'Z349YD6992FHPR3V7SMTS62X1TS52EV5KT',  // Replace with your actual CeloScan API key
+  };
+
+  if (chain === 'fuse') {
+    try {
+      // const walletActionsResult: WalletActionResult = await (await fuse).getWalletActions({ page: 1, limit: 10, walletAddress });
+      // return walletActionsResult.actions as TokenTransferEvent[];
+
+      let user = await User.findOne({ fuseWalletAddress: walletAddress });
+      console.log("user is :", user);
+  
+      const apiKey = process.env.FUSE_PUBLIC_API_KEY as string;
+      const credentials = new ethers.Wallet(user?.privateKey as string);
+  
+      const fuseSDK = await FuseSDK.init(apiKey, credentials);
+      const walletActionsResult: WalletActionResult = await (await fuseSDK).getWalletActions({tokenAddress: "0x28C3d1cD466Ba22f6cae51b1a4692a831696391A"});
+      console.log(walletActionsResult.actions)
+      return walletActionsResult.actions
+    } catch (error) {
+      console.error('Error in getAllTokenTransferEvents:', error);
+      throw error;  // Re-throw to be caught by the controller error handler.
+    }
+  } else {
     const baseURL = apiEndpoints[chain];
     const apiKey = apiKeys[chain];
     const url = `${baseURL}?module=account&action=tokentx&address=${walletAddress}&page=1&offset=5&sort=desc&apikey=${apiKey}`;
-  
+
     try {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Failed to fetch data from API');
       }
-  
+
       const data = await response.json();
       if (data.status !== '1') {
         throw new Error(data.message);
@@ -313,8 +372,7 @@ async function getAllTokenTransferEvents(chain: Chain, walletAddress: string): P
       throw error;  // Re-throw to be caught by the controller error handler.
     }
   }
-
-
+}
 // Other business logic functions like sendToken, payToken etc. go here.
 
   const PLATFORM_WALLET_ADDRESS = "0x9c0486FafFE8E44FcEdc8e0D8760811BF25a942c"; // Hardcoded platform wallet address
@@ -523,24 +581,47 @@ async function sendToken(tokenAddress: string, recipientAddress: string, amount:
       }
 
 
-      export async function sendTokenFuse(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
+      // export async function sendTokenFuse(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
      
+      //   let user = await User.findOne({ fuseWalletAddress: senderAddress });
+      //   console.log("user is :", user);
+
+      //   const apiKey = process.env.FUSE_PUBLIC_API_KEY as string;
+      //   const credentials = new ethers.Wallet(user?.privateKey as string,);
+      //   // const fuseSDK = await FuseSDK.init(apiKey, credentials, {
+      //   //   withPaymaster: true,
+      //   // });
+      //   const fuseSDK = await FuseSDK.init(apiKey, credentials);
+      //   const amount2 = ethers.utils.parseUnits(amount as unknown as string, 6);
+
+      //   const res = await fuseSDK.transferToken(tokenAddress, recipientAddress, amount);
+      //   console.log(`UserOpHash: ${res?.userOpHash}`);
+      //   console.log("Waiting for transaction...");
+      
+      //   const receipt = await res?.wait();
+      //   console.log(
+      //     `User operation hash: https://explorer.fuse.io/tx/${receipt?.transactionHash}`
+      //   );
+      // }
+
+      export async function sendTokenFuse(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
         let user = await User.findOne({ fuseWalletAddress: senderAddress });
         console.log("user is :", user);
-
-        // const tokenAddress = "0x28C3d1cD466Ba22f6cae51b1a4692a831696391A"
+    
         const apiKey = process.env.FUSE_PUBLIC_API_KEY as string;
-        const credentials = new ethers.Wallet(user?.privateKey as string,);
-        const fuseSDK = await FuseSDK.init(apiKey, credentials, {
-          withPaymaster: true,
-        });
-        // const amount2 = ethers.parseUnits(amount, 6)
-        const res = await fuseSDK.transferToken(tokenAddress, recipientAddress, amount);
+        const credentials = new ethers.Wallet(user?.privateKey as string);
+    
+        const fuseSDK = await FuseSDK.init(apiKey, credentials);
+        
+        // Convert amount to string and then parse it to BigNumber
+        const amount2 = ethers.utils.parseUnits(amount.toString(), 6);
+    
+        const res = await fuseSDK.transferToken(tokenAddress, recipientAddress, amount2);
         console.log(`UserOpHash: ${res?.userOpHash}`);
         console.log("Waiting for transaction...");
       
         const receipt = await res?.wait();
         console.log(
-          `User operation hash: https://explorer.fuse.io/tx/${receipt?.transactionHash}`
+            `User operation hash: https://explorer.fuse.io/tx/${receipt?.transactionHash}`
         );
-      }
+    }

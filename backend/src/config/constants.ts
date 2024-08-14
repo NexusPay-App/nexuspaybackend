@@ -30,6 +30,8 @@ export function getProvider(chain: string): ethers.providers.Provider {
       return new ethers.providers.JsonRpcProvider('https://arb-mainnet.g.alchemy.com/v2/BsIntFyzOmCo53B6JR2WdYNk-j_4g2TM');
     case 'celo':
       return new ethers.providers.JsonRpcProvider('https://forno.celo.org');
+      case 'fuse':
+        return new ethers.providers.JsonRpcProvider('https://rpc.fuse.io/');
     default:
       throw new Error(`Unsupported chain: ${chain}`);
   }
@@ -41,6 +43,8 @@ export function getTokenAddress(chain: string): string {
       return '0xaf88d065e77c8cC2239327C5EDb3A432268e5831'; // Arbitrum USDC address
     case 'celo':
       return '0xcebA9300f2b948710d2653dD7B07f33A8B32118C'; // Celo USDC address
+      case 'fuse':
+        return '0x28C3d1cD466Ba22f6cae51b1a4692a831696391A'; // fuse USDC address
     default:
       throw new Error(`Unsupported chain: ${chain}`);
   }
