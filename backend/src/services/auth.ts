@@ -1,14 +1,14 @@
 import { ChainId } from "@biconomy/core-types"
 import { BiconomySmartAccount, BiconomySmartAccountConfig } from "@biconomy/account"
 import { createThirdwebClient } from "thirdweb";
-import env from "../config/env";
+import config from "../config/env";
 import AfricasTalking from 'africastalking';
 import { Wallet } from 'ethers';
 import { bundler, paymaster, provider, celo } from "../config/constants";
 import { privateKeyToAccount, smartWallet } from "thirdweb/wallets";
 
 export const africastalking = AfricasTalking({
-    apiKey: env.AFRICAS_TALKING_API_KEY,
+    apiKey: config.AFRICAS_TALKING_API_KEY,
     username: 'NEXUSPAY'
 });
 
@@ -26,7 +26,7 @@ export const generateOTP = (): string => {
 };
 
 export const client = createThirdwebClient({
-    secretKey: env.THIRDWEB_SECRET_KEY as string,
+    secretKey: config.THIRDWEB_SECRET_KEY as string,
 });
 
 export async function instanceAccount(prikey: string) {

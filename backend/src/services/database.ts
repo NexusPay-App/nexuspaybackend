@@ -1,8 +1,8 @@
 
 import mongoose from 'mongoose';
-import env from '../config/env';
+import config from '../config/env';
 
-const MONGO_URL = env.MONGO_URL
+const MONGO_URL = config.MONGO_URL
 
 export async function connect() {
   try {
