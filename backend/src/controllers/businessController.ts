@@ -1,11 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { Business } from '../models/businessModel';
-
-//take this createAccount to utils or services instead of using it from auth
-import { createAccount } from '../services/auth';
-
-const SALT_ROUNDS = 10; // Consider storing this in environment variables
+import { createAccount, SALT_ROUNDS } from '../services/auth';
 
 export const registerBusiness = async (req: Request, res: Response) => {
 
