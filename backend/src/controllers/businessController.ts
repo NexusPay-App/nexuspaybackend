@@ -11,7 +11,6 @@ export const registerBusiness = async (req: Request, res: Response) => {
     return res.status(400).send({ message: "All fields are required!" });
   }
 
-  // let business = await Business.findOne({ phoneNumber: phoneNumber });
   let business;
 
 
