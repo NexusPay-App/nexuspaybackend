@@ -1,8 +1,8 @@
 
 import mongoose from 'mongoose';
+import env from '../config/env';
 
-const MONGO_URL = "mongodb+srv://productionbranch:productionbranch9021@cluster0.y6bk3ba.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-// const MONGO_URL = "mongodb+srv://agatenashons:nashtech9021@afpay.cnz3ecn.mongodb.net/?retryWrites=true&w=majority";
+const MONGO_URL = env.MONGO_URL
 
 export async function connect() {
   try {

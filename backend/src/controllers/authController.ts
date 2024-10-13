@@ -1,56 +1,9 @@
-import { config } from "dotenv"
-import { ChainId } from "@biconomy/core-types"
-import { BiconomySmartAccount, BiconomySmartAccountConfig, DEFAULT_ENTRYPOINT_ADDRESS } from "@biconomy/account"
-import { Wallet, providers } from 'ethers';
 import { User } from '../models/models';
 import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { bundler, paymaster, provider } from "../config/constants";
-import AfricasTalking from 'africastalking';
-import { privateKeyAccount, smartWallet } from "thirdweb/wallets";
-import dotenv from "dotenv";
-import { getContract, sendTransaction } from "thirdweb";
-import {  arbitrumSepolia } from "thirdweb/chains";
-import { defineChain } from "thirdweb";
-import client from "../config/thirdwebClient";
-
-
-dotenv.config();
-const SALT_ROUNDS = 10; 
-const celo = defineChain(42220);
-
-
-const myChain = defineChain({
-  id: 42220,
-  rpc: "wss://forno.celo.org/ws"
-});
-
-// console.log(`chain is ${celo}`)
-
-// Log the entire object as a JSON string
-console.log(`chain is ${JSON.stringify(celo, null, 2)}`);
-
-// Log specific properties if you want to be more specific
-console.log(`chain name is ${celo.name}`);
-console.log(`chain arbitrum ${JSON.stringify(arbitrumSepolia, null, 2)}`);
-
-// Initialize Africa's Talking
-const africastalking = AfricasTalking({
-  apiKey: '8fc37bdf0cd1f8df152e422c38919aeed78c019b64460b9e5c561d36bac405fd',
-  username: 'NEXUSPAY'
-});
-// Temporary store for OTPs
-const otpStore: Record<string, string> = {};
-
-// Helper function to generate OTP
-const generateOTP = (): string => {
-  let otp = '';
-  for (let i = 0; i < 6; i++) {
-    otp += Math.floor(Math.random() * 10).toString();
-  }
-  return otp;
-};
+import { createAccount, generateOTP, otpStore, africastalking, SALT_ROUNDS } from "../services/auth"
+import { handleError } from "../services/utils"
 
 export const initiateRegisterUser = async (req: Request, res: Response) => {
   const { phoneNumber } = req.body;
@@ -134,7 +87,7 @@ export const loginUser = async (req: Request, res: Response) => {
   if (!phoneNumber || !password) {
     return res.status(400).send({ message: "Phone number and password are required!" });
   }
-console.log(`${phoneNumber} and passwod is ${password}`)
+  console.log(`${phoneNumber} and password is ${password}`)
   let user;
   try {
     user = await User.findOne({ phoneNumber: phoneNumber });
@@ -210,79 +163,4 @@ export const resetPassword = async (req: Request, res: Response) => {
   } catch (error) {
     return handleError(error, res, "Failed to reset password", 500);
   }
-};
-
-
-
-export async function createAccount() {
- 
-    const newWallet = Wallet.createRandom();
-    const pk = newWallet.privateKey
-    const wallet = new Wallet(pk, provider);
-  
-    const celowallet = await createAccountCelo(pk)
-
-    const biconomySmartAccountConfig: BiconomySmartAccountConfig = {
-      signer: wallet,
-      chainId: ChainId.ARBITRUM_ONE_MAINNET,
-      bundler: bundler,
-      paymaster: paymaster
-    }
-  
-    let biconomySmartAccount = new BiconomySmartAccount(biconomySmartAccountConfig)
-    biconomySmartAccount =  await biconomySmartAccount.init()
-    
-    // console.log("owner: ", biconomySmartAccount.owner)
-    console.log("arbitrum: ", await biconomySmartAccount.getSmartAccountAddress())
-    return {biconomySmartAccount, celowallet, pk};
-    }
-
-    export async function instanceAccount(prikey: string) {
-      const wallet = new Wallet(prikey, provider);
-  
-      //smart account config
-      const biconomySmartAccountConfig: BiconomySmartAccountConfig = {
-        signer: wallet,
-        chainId: ChainId.ARBITRUM_ONE_MAINNET,
-        bundler: bundler,
-        paymaster: paymaster
-      }
-    
-      let biconomySmartAccount = new BiconomySmartAccount(biconomySmartAccountConfig)
-      biconomySmartAccount =  await biconomySmartAccount.init()
-      console.log("owner: ", biconomySmartAccount.owner)
-      console.log("address: ", await biconomySmartAccount.getSmartAccountAddress())
-      return biconomySmartAccount;
-    }
-
-    export async function createAccountCelo(privatekey: String) {
-      // Create a new EOA
-      const personalAccount = privateKeyAccount({
-        client,
-        privateKey: privatekey as string,
-      });
-    
-      // console.log("Personal account address:", personalAccount.address);
-    
-      // Configure the smart wallet
-      const wallet = smartWallet({
-        chain: celo,
-        sponsorGas: false,
-      });
-    
-      // Connect the smart wallet
-      const smartAccount = await wallet.connect({
-        client,
-        personalAccount,
-      });
-    
-      console.log("celo:", smartAccount.address);
-    
-      return smartAccount.address;
-    }
-
-// Utility function to handle errors
-const handleError = (error: any, res: Response, message: string, statusCode: number = 500) => {
-  console.error(message, error);
-  return res.status(statusCode).send({ error: message, details: error.message });
 };

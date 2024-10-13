@@ -4,17 +4,16 @@ import { User } from '../models/models';
 import { Business } from '../models/businessModel';
 import { IHybridPaymaster, PaymasterMode, SponsorUserOperationDto } from '@biconomy/paymaster';
 import { ethers } from 'ethers';
-import { instanceAccount } from './authController';
+import { instanceAccount } from '../services/auth';
 import fetch from "node-fetch";
 import { tokenContract } from '../config/constants';
 import AfricasTalking from 'africastalking';
 import { privateKeyAccount, smartWallet } from "thirdweb/wallets";
 import dotenv from "dotenv";
 import { getContract, sendTransaction } from "thirdweb";
-import {  arbitrumSepolia } from "thirdweb/chains";
-import {  transfer } from "thirdweb/extensions/erc20";
+import { transfer } from "thirdweb/extensions/erc20";
 import { defineChain } from "thirdweb";
-import client from '../config/thirdwebClient';
+import { client } from '../services/auth';
 
 
 dotenv.config();
@@ -103,7 +102,7 @@ export const send = async (req: Request, res: Response) => {
     if (!tokenAddress || !recipientIdentifier || !amount || !senderAddress || !chain) {
         return res.status(400).send({ message: "Required parameters are missing!" });
     }
-console.log(`${amount}, ${senderAddress}, ${recipientIdentifier}, ${chain}`)
+    console.log(`${amount}, ${senderAddress}, ${recipientIdentifier}, ${chain}`)
     let recipientAddress = recipientIdentifier;
     let recipientPhone = '';
     if (!ethers.utils.isAddress(recipientIdentifier)) {
@@ -206,33 +205,33 @@ export const pay = async (req: Request, res: Response) => {
         res.send({ message: 'Token sent successfully to the business!', paid: true });
     } catch (error) {
         console.error("Error in pay API:", error);
-        res.status(500).send({ message: 'Failed to send token.', error: error});
-    }   
+        res.status(500).send({ message: 'Failed to send token.', error: error });
+    }
 };
 
 
 export const tokenTransferEvents = async (req: Request, res: Response) => {
-  const { address, chain } = req.query;
+    const { address, chain } = req.query;
 
-  if (!address) {
-    return res.status(400).send('Address is required as a query parameter.');
-  }
+    if (!address) {
+        return res.status(400).send('Address is required as a query parameter.');
+    }
 
-  if (!chain) {
-    return res.status(400).send('Chain is required as a query parameter.');
-  }
+    if (!chain) {
+        return res.status(400).send('Chain is required as a query parameter.');
+    }
 
-  if (!['arbitrum', 'celo'].includes(chain as string)) {
-    return res.status(400).send('Invalid chain parameter. Supported chains are arbitrum and celo.');
-  }
+    if (!['arbitrum', 'celo'].includes(chain as string)) {
+        return res.status(400).send('Invalid chain parameter. Supported chains are arbitrum and celo.');
+    }
 
-  try {
-    const events = await getAllTokenTransferEvents(chain as Chain, address as string);
-    res.json(events);
-  } catch (error) {
-    console.error('Error fetching token transfer events:', error);
-    res.status(500).send({ message: 'Internal server error', error: error });
-  }
+    try {
+        const events = await getAllTokenTransferEvents(chain as Chain, address as string);
+        res.json(events);
+    } catch (error) {
+        console.error('Error fetching token transfer events:', error);
+        res.status(500).send({ message: 'Internal server error', error: error });
+    }
 };
 
 
@@ -284,106 +283,106 @@ type Chain = 'arbitrum' | 'celo';
 
 async function getAllTokenTransferEvents(chain: Chain, walletAddress: string): Promise<TokenTransferEvent[]> {
     const apiEndpoints = {
-      arbitrum: 'https://api.arbiscan.io/api',
-      celo: 'https://api.celoscan.io/api',
+        arbitrum: 'https://api.arbiscan.io/api',
+        celo: 'https://api.celoscan.io/api',
     };
-  
+
     const apiKeys = {
-      arbitrum: '44UDQIEKU98ZQ559DWX4ZUZJC5EBK8XUU4',
-      celo: 'Z349YD6992FHPR3V7SMTS62X1TS52EV5KT',  // Replace with your actual CeloScan API key
+        arbitrum: '44UDQIEKU98ZQ559DWX4ZUZJC5EBK8XUU4',
+        celo: 'Z349YD6992FHPR3V7SMTS62X1TS52EV5KT',  // Replace with your actual CeloScan API key
     };
-  
+
     const baseURL = apiEndpoints[chain];
     const apiKey = apiKeys[chain];
     const url = `${baseURL}?module=account&action=tokentx&address=${walletAddress}&page=1&offset=5&sort=desc&apikey=${apiKey}`;
-  
+
     try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to fetch data from API');
-      }
-  
-      const data = await response.json();
-      if (data.status !== '1') {
-        throw new Error(data.message);
-      }
-      return data.result as TokenTransferEvent[];
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Failed to fetch data from API');
+        }
+
+        const data = await response.json();
+        if (data.status !== '1') {
+            throw new Error(data.message);
+        }
+        return data.result as TokenTransferEvent[];
     } catch (error) {
-      console.error('Error in getAllTokenTransferEvents:', error);
-      throw error;  // Re-throw to be caught by the controller error handler.
+        console.error('Error in getAllTokenTransferEvents:', error);
+        throw error;  // Re-throw to be caught by the controller error handler.
     }
-  }
+}
 
 
 // Other business logic functions like sendToken, payToken etc. go here.
 
-  const PLATFORM_WALLET_ADDRESS = "0x9c0486FafFE8E44FcEdc8e0D8760811BF25a942c"; // Hardcoded platform wallet address
+const PLATFORM_WALLET_ADDRESS = "0x9c0486FafFE8E44FcEdc8e0D8760811BF25a942c"; // Hardcoded platform wallet address
 //   const FEE_PERCENTAGE = 0.005; // 0.5%
-  
-  async function payToken(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
-      try {
-          let user = await User.findOne({ walletAddress: senderAddress });
-          console.log("Private Key:", user);
-  
-          const biconomySmartAccount = await instanceAccount(user?.privateKey as string);
-  
-          let decimals = 6;
-          try {
-              decimals = await tokenContract.decimals();
-          } catch (error) {
-              throw new Error('invalid token address supplied');
-          }
-  
-          const amountGwei = ethers.utils.parseUnits(amount.toString(), decimals);
-        //   const feeAmountGwei = ethers.utils.parseUnits((amount * FEE_PERCENTAGE).toString(), decimals);
-  
-          // Transaction to recipient
-          const recipientData = (await tokenContract.populateTransaction.transfer(recipientAddress, amountGwei)).data;
-          const recipientTransaction = {
-              to: tokenAddress,
-              data: recipientData,
-          };
-  
-       
-  
-          // Batch the transactions
-          let partialUserOp = await biconomySmartAccount.buildUserOp([recipientTransaction]);
-  
 
-  
-          const biconomyPaymaster =
-          biconomySmartAccount.paymaster as IHybridPaymaster<SponsorUserOperationDto>;
-      
-      let paymasterServiceData: SponsorUserOperationDto = {
-          mode: PaymasterMode.SPONSORED,
-      };
-      console.log("getting paymaster and data");
-      try {
-          const paymasterAndDataResponse =
-              await biconomyPaymaster.getPaymasterAndData(
-                  partialUserOp,
-                  paymasterServiceData
-              );
-          partialUserOp.paymasterAndData =
-              paymasterAndDataResponse.paymasterAndData;
-      } catch (e) {
-          console.log("error received ", e);
-      }
-      console.log("sending userop");
-      try {
-          const userOpResponse = await biconomySmartAccount.sendUserOp(partialUserOp);
-          const transactionDetails = await userOpResponse.wait();
-          console.log(
-              `transactionDetails: https://arbiscan.io/tx/${transactionDetails.receipt.transactionHash}`
-          );
-       
-      } catch (e) {
-          console.log("error received ", e);
-      }
+async function payToken(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
+    try {
+        let user = await User.findOne({ walletAddress: senderAddress });
+        console.log("Private Key:", user);
+
+        const biconomySmartAccount = await instanceAccount(user?.privateKey as string);
+
+        let decimals = 6;
+        try {
+            decimals = await tokenContract.decimals();
         } catch (error) {
-          console.error("Error in sendToken:", error);
+            throw new Error('invalid token address supplied');
         }
-      }
+
+        const amountGwei = ethers.utils.parseUnits(amount.toString(), decimals);
+        //   const feeAmountGwei = ethers.utils.parseUnits((amount * FEE_PERCENTAGE).toString(), decimals);
+
+        // Transaction to recipient
+        const recipientData = (await tokenContract.populateTransaction.transfer(recipientAddress, amountGwei)).data;
+        const recipientTransaction = {
+            to: tokenAddress,
+            data: recipientData,
+        };
+
+
+
+        // Batch the transactions
+        let partialUserOp = await biconomySmartAccount.buildUserOp([recipientTransaction]);
+
+
+
+        const biconomyPaymaster =
+            biconomySmartAccount.paymaster as IHybridPaymaster<SponsorUserOperationDto>;
+
+        let paymasterServiceData: SponsorUserOperationDto = {
+            mode: PaymasterMode.SPONSORED,
+        };
+        console.log("getting paymaster and data");
+        try {
+            const paymasterAndDataResponse =
+                await biconomyPaymaster.getPaymasterAndData(
+                    partialUserOp,
+                    paymasterServiceData
+                );
+            partialUserOp.paymasterAndData =
+                paymasterAndDataResponse.paymasterAndData;
+        } catch (e) {
+            console.log("error received ", e);
+        }
+        console.log("sending userop");
+        try {
+            const userOpResponse = await biconomySmartAccount.sendUserOp(partialUserOp);
+            const transactionDetails = await userOpResponse.wait();
+            console.log(
+                `transactionDetails: https://arbiscan.io/tx/${transactionDetails.receipt.transactionHash}`
+            );
+
+        } catch (e) {
+            console.log("error received ", e);
+        }
+    } catch (error) {
+        console.error("Error in sendToken:", error);
+    }
+}
 
 
 
@@ -442,82 +441,82 @@ async function sendToken(tokenAddress: string, recipientAddress: string, amount:
 
 
         const biconomyPaymaster =
-        biconomySmartAccount.paymaster as IHybridPaymaster<SponsorUserOperationDto>;
-    
-    let paymasterServiceData: SponsorUserOperationDto = {
-        mode: PaymasterMode.SPONSORED,
-    };
-    console.log("getting paymaster and data");
-    try {
-        const paymasterAndDataResponse =
-            await biconomyPaymaster.getPaymasterAndData(
-                partialUserOp,
-                paymasterServiceData
+            biconomySmartAccount.paymaster as IHybridPaymaster<SponsorUserOperationDto>;
+
+        let paymasterServiceData: SponsorUserOperationDto = {
+            mode: PaymasterMode.SPONSORED,
+        };
+        console.log("getting paymaster and data");
+        try {
+            const paymasterAndDataResponse =
+                await biconomyPaymaster.getPaymasterAndData(
+                    partialUserOp,
+                    paymasterServiceData
+                );
+            partialUserOp.paymasterAndData =
+                paymasterAndDataResponse.paymasterAndData;
+        } catch (e) {
+            console.log("error received ", e);
+        }
+        console.log("sending userop");
+        try {
+            const userOpResponse = await biconomySmartAccount.sendUserOp(partialUserOp);
+            const transactionDetails = await userOpResponse.wait();
+            console.log(
+                `transactionDetails: https://arbiscan.io/tx/${transactionDetails.receipt.transactionHash}`
             );
-        partialUserOp.paymasterAndData =
-            paymasterAndDataResponse.paymasterAndData;
-    } catch (e) {
-        console.log("error received ", e);
-    }
-    console.log("sending userop");
-    try {
-        const userOpResponse = await biconomySmartAccount.sendUserOp(partialUserOp);
-        const transactionDetails = await userOpResponse.wait();
-        console.log(
-            `transactionDetails: https://arbiscan.io/tx/${transactionDetails.receipt.transactionHash}`
-        );
-     
-    } catch (e) {
-        console.log("error received ", e);
-    }
-      } catch (error) {
+
+        } catch (e) {
+            console.log("error received ", e);
+        }
+    } catch (error) {
         console.error("Error in sendToken:", error);
-      }
     }
+}
 
 
-    export async function sendTokenCelo(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
-      //TODO: ADD fee model
-        let user = await User.findOne({ celoWalletAddress: senderAddress });
-        console.log("Private Key:", user);
+export async function sendTokenCelo(tokenAddress: string, recipientAddress: string, amount: number, senderAddress: string) {
+    //TODO: ADD fee model
+    let user = await User.findOne({ celoWalletAddress: senderAddress });
+    console.log("Private Key:", user);
 
-        const personalAccount = privateKeyAccount({
-          client,
-          privateKey: user?.privateKey as string,
-        });
-      
-      
-        const wallet =  smartWallet({
-          chain: celo,
-          sponsorGas: true,
-        });
-      
-        // Connect the smart wallet
-        const smartAccount = await wallet.connect({
-          client,
-          personalAccount,
-        });
-      
-        console.log("Smart account address:", smartAccount.address);
-      
-        const contract = getContract({
-          client,
-          chain: celo,
-          address: tokenAddress,
-         });
-         
-          
-        const transaction = transfer({
-            contract,
-            to: recipientAddress,
-            amount: amount,
-          });
-        
-         
-        await sendTransaction({
-          transaction,
-          account: smartAccount,
-        });
-      
-      
-      }
+    const personalAccount = privateKeyAccount({
+        client,
+        privateKey: user?.privateKey as string,
+    });
+
+
+    const wallet = smartWallet({
+        chain: celo,
+        sponsorGas: true,
+    });
+
+    // Connect the smart wallet
+    const smartAccount = await wallet.connect({
+        client,
+        personalAccount,
+    });
+
+    console.log("Smart account address:", smartAccount.address);
+
+    const contract = getContract({
+        client,
+        chain: celo,
+        address: tokenAddress,
+    });
+
+
+    const transaction = transfer({
+        contract,
+        to: recipientAddress,
+        amount: amount,
+    });
+
+
+    await sendTransaction({
+        transaction,
+        account: smartAccount,
+    });
+
+
+}

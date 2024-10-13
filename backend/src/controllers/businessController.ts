@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { Business } from '../models/businessModel';
 
 //take this createAccount to utils or services instead of using it from auth
-import { createAccount } from './authController';
+import { createAccount } from '../services/auth';
 
 const SALT_ROUNDS = 10; // Consider storing this in environment variables
 
@@ -40,9 +40,9 @@ export const registerBusiness = async (req: Request, res: Response) => {
     });
 
     await business.save();
-    res.send({ 
-      message: "Business registered successfully!", 
-      walletAddress: walletAddress, 
+    res.send({
+      message: "Business registered successfully!",
+      walletAddress: walletAddress,
       uniqueCode: uniqueCode
     });
 
