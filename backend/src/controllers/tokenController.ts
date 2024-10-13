@@ -32,17 +32,20 @@ export const send = async (req: Request, res: Response) => {
         recipientPhone = user.phoneNumber;
     }
 
+    let sender
+
     try {
         if (chain === 'celo') {
             await sendTokenCelo(tokenAddress, recipientAddress, amount, senderAddress);
+            sender = await User.findOne({ celoWalletAddress: senderAddress });
         } else if (chain === 'arbitrum') {
             await sendToken(tokenAddress, recipientAddress, amount, senderAddress);
+            sender = await User.findOne({ walletAddress: senderAddress });
         } else {
             return res.status(400).send({ message: "Unsupported chain!" });
         }
 
         // Retrieve the sender's phone number from the database
-        const sender = await User.findOne({ walletAddress: senderAddress });
         const senderPhone = sender ? sender.phoneNumber : '';
 
         // Generate the current date and time in Kenyan timezone
@@ -71,15 +74,16 @@ export const send = async (req: Request, res: Response) => {
         // Send SMS messages to both sender and recipient
         if (senderPhone) {
             await africastalking.SMS.send({
-                to: [senderPhone],
+                to: senderPhone,
                 message: senderMessage,
                 from: 'NEXUSPAY'
             });
+            console.log("sending to sender phone: ", senderPhone)
         }
 
         if (recipientPhone) {
             await africastalking.SMS.send({
-                to: [recipientPhone],
+                to: recipientPhone,
                 message: recipientMessage,
                 from: 'NEXUSPAY'
             });
