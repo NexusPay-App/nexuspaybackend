@@ -2,7 +2,7 @@ import { Chain } from '../types/token';
 import { TokenTransferEvent } from '../types/token';
 import { tokenContract } from '../config/constants';
 import { IHybridPaymaster, PaymasterMode, SponsorUserOperationDto } from '@biconomy/paymaster';
-import { instanceAccount, client } from '../services/auth';
+import { instanceAccount, client } from './auth';
 import { User } from '../models/models';
 import { ethers } from 'ethers';
 import { privateKeyToAccount, smartWallet } from "thirdweb/wallets";
