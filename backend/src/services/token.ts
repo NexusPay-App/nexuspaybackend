@@ -250,3 +250,42 @@ export async function getAllTokenTransferEvents(chain: Chain, walletAddress: str
 }
 
 
+// Include any other USD Coin related functions here
+async function fetchUSDCToKESPrice() {
+    // Define the API endpoint
+    const apiEndpoint = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=USDC&convert=KES';
+
+    // Set the API key header
+    const headers = {
+        'X-CMC_PRO_API_KEY': '7e75c059-0ffc-41ca-ae72-88df27e0f202'
+    };
+
+    // Make a GET request to the API endpoint
+    const response = await fetch(apiEndpoint, { headers });
+
+    // Check the response status code
+    if (response.status !== 200) {
+        throw new Error(`Failed to fetch USDC to KES price: ${response.status}`);
+    }
+
+    // Parse the JSON response
+    const data = await response.json();
+
+    // Return the USDC to KES price
+    return data.data['USDC'].quote['KES'].price;
+}
+
+export async function getConversionRateWithCaching() {
+    let cache = {
+        rate: null,
+        timestamp: 0
+    };
+    const cacheDuration = 10 * 60 * 1000; // 10 minutes in milliseconds
+    if (cache.rate && (Date.now() - cache.timestamp < cacheDuration)) {
+        return cache.rate; // Return cached rate if it's fresh
+    } else {
+        const rate = await fetchUSDCToKESPrice(); // Fetch new rate
+        cache = { rate, timestamp: Date.now() };
+        return rate;
+    }
+}

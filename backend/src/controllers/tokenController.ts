@@ -8,7 +8,6 @@ import { sendTokenCelo, sendToken, payToken } from '../services/token';
 import { Chain } from '../types/token';
 import { getAllTokenTransferEvents } from '../services/token';
 
-
 export const send = async (req: Request, res: Response) => {
     const { tokenAddress, recipientIdentifier, amount, senderAddress, chain } = req.body;
     if (!tokenAddress || !recipientIdentifier || !amount || !senderAddress || !chain) {
