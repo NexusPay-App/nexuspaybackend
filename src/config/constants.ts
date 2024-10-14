@@ -4,9 +4,10 @@ import { Bundler, IBundler } from "@biconomy/bundler";
 import { DEFAULT_ENTRYPOINT_ADDRESS } from "@biconomy/account";
 import { ChainId } from "@biconomy/core-types";
 import { IPaymaster, BiconomyPaymaster } from "@biconomy/paymaster";
+import { defineChain } from "thirdweb"
 import config from "./env";
 
-export const celo = config.celo
+export const celo = defineChain(config["celo"].chainId)
 
 // export const provider = new providers.JsonRpcProvider("https://rpc.ankr.com/polygon_mumbai")
 export const provider = new providers.JsonRpcProvider("https://arb-mainnet.g.alchemy.com/v2/BsIntFyzOmCo53B6JR2WdYNk-j_4g2TM")
