@@ -3,14 +3,14 @@ import { Request, Response } from 'express';
 import { User } from '../models/models';
 import { Business } from '../models/businessModel';
 import { ethers } from 'ethers';
-import { client, africastalking } from '../services/auth';
-import { sendTokenCelo, sendToken, payToken } from '../services/token';
+import { africastalking } from '../services/auth';
+import { sendToken } from '../services/token';
 import { Chain } from '../types/token';
 import { getAllTokenTransferEvents } from '../services/token';
 
 export const send = async (req: Request, res: Response) => {
-    const { tokenAddress, recipientIdentifier, amount, senderAddress, chain } = req.body;
-    if (!tokenAddress || !recipientIdentifier || !amount || !senderAddress || !chain) {
+    const { recipientIdentifier, amount, senderAddress, chain } = req.body;
+    if (!recipientIdentifier || !amount || !senderAddress || !chain) {
         return res.status(400).send({ message: "Required parameters are missing!" });
     }
     console.log(`${amount}, ${senderAddress}, ${recipientIdentifier}, ${chain}`)
@@ -34,16 +34,14 @@ export const send = async (req: Request, res: Response) => {
     let sender
 
     try {
-        if (chain === 'celo') {
-            await sendTokenCelo(tokenAddress, recipientAddress, amount, senderAddress);
+        if (chain === 'celo' || chain == 'arbitrum') {
             sender = await User.findOne({ celoWalletAddress: senderAddress });
-        } else if (chain === 'arbitrum') {
-            await sendToken(tokenAddress, recipientAddress, amount, senderAddress);
-            sender = await User.findOne({ walletAddress: senderAddress });
-        } else {
+        }
+        else {
             return res.status(400).send({ message: "Unsupported chain!" });
         }
-
+        console.log("sender: ", sender)
+        await sendToken(recipientAddress, amount, chain, sender?.privateKey as string);
         // Retrieve the sender's phone number from the database
         const senderPhone = sender ? sender.phoneNumber : '';
 
@@ -98,11 +96,12 @@ export const send = async (req: Request, res: Response) => {
 
 
 export const pay = async (req: Request, res: Response) => {
-    const { tokenAddress, senderAddress, businessUniqueCode, amount, confirm } = req.body;
-    if (!tokenAddress || !businessUniqueCode || !amount || !senderAddress) {
+    const { senderAddress, businessUniqueCode, amount, confirm } = req.body;
+    if (!businessUniqueCode || !amount || !senderAddress) {
         return res.status(400).send({ message: "Required parameters are missing!" });
     }
 
+    let sender = await User.findOne({ walletAddress: senderAddress });
     const business = await Business.findOne({ uniqueCode: businessUniqueCode });
     if (!business) {
         return res.status(404).send({ message: "Business not found!" });
@@ -116,7 +115,7 @@ export const pay = async (req: Request, res: Response) => {
     }
 
     try {
-        await payToken(tokenAddress, business.walletAddress, amount, senderAddress);
+        await sendToken(business.walletAddress, amount, "arbitrum", sender?.privateKey as string)
         res.send({ message: 'Token sent successfully to the business!', paid: true });
     } catch (error) {
         console.error("Error in pay API:", error);
