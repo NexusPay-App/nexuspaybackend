@@ -5,7 +5,7 @@ import { createAccount, SALT_ROUNDS } from '../services/auth';
 
 export const registerBusiness = async (req: Request, res: Response) => {
 
-  const { businessName, ownerName, location, phoneNumber, password } = req.body;
+  const { businessName, ownerName, location, phoneNumber, password, chainName } = req.body;
 
   if (!businessName || !ownerName || !location || !phoneNumber || !password) {
     return res.status(400).send({ message: "All fields are required!" });
@@ -15,10 +15,7 @@ export const registerBusiness = async (req: Request, res: Response) => {
 
 
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-  const businessSmartAccount = await createAccount();
-  const { biconomySmartAccount, pk } = businessSmartAccount;
-  const walletAddress = await biconomySmartAccount.getSmartAccountAddress();
-
+  const { pk, walletAddress } = await createAccount(chainName);
   // Generate unique 5-digit code
   const uniqueCode = (Math.floor(Math.random() * 90000) + 10000).toString();
 
