@@ -40,7 +40,7 @@ export const initiateRegisterUser = async (req: Request, res: Response) => {
 
 
 export const registerUser = async (req: Request, res: Response) => {
-  const { phoneNumber, password, otp } = req.body;
+  const { phoneNumber, password, otp, chainName } = req.body;
 
   if (!phoneNumber || !password || !otp) {
     return res.status(400).send({ message: "Phone number, password, and OTP are required!" });
@@ -55,7 +55,7 @@ export const registerUser = async (req: Request, res: Response) => {
 
   try {
     hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-    userSmartAccount = await createAccount();
+    userSmartAccount = await createAccount(chainName);
   } catch (error) {
     return handleError(error, res, "Error during account creation or password hashing");
   }
