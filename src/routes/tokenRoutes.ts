@@ -1,6 +1,5 @@
 import express from 'express';
 import { send, pay, tokenTransferEvents } from '../controllers/tokenController';
-import { authenticateToken } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
