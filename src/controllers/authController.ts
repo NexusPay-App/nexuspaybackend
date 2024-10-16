@@ -60,14 +60,12 @@ export const registerUser = async (req: Request, res: Response) => {
     return handleError(error, res, "Error during account creation or password hashing");
   }
 
-  const { biconomySmartAccount, pk, celowallet } = userSmartAccount;
-  const walletAddress = await biconomySmartAccount.getSmartAccountAddress();
+  const { pk, walletAddress } = userSmartAccount;
 
   try {
     newUser = new User({
       phoneNumber: phoneNumber,
       walletAddress: walletAddress,
-      celoWalletAddress: celowallet,
       password: hashedPassword,
       privateKey: pk
     });
@@ -76,8 +74,8 @@ export const registerUser = async (req: Request, res: Response) => {
     return handleError(error, res, "Error registering user");
   }
 
-  const token = jwt.sign({ phoneNumber: newUser.phoneNumber, walletAddress: newUser.walletAddress, celoWallet: newUser.celoWalletAddress }, 'zero', { expiresIn: '1h' });
-  res.send({ token, message: "Registered successfully!", arbitrumWallet: newUser.walletAddress, celoWallet: newUser.celoWalletAddress, phoneNumber: newUser.phoneNumber });
+  const token = jwt.sign({ phoneNumber: newUser.phoneNumber, walletAddress: newUser.walletAddress }, 'zero', { expiresIn: '1h' });
+  res.send({ token, message: "Registered successfully!", arbitrumWallet: newUser.walletAddress, phoneNumber: newUser.phoneNumber });
 };
 
 
@@ -111,7 +109,7 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 
   const token = jwt.sign({ phoneNumber: user.phoneNumber, walletAddress: user.walletAddress }, 'zero', { expiresIn: '1h' });
-  res.send({ token, message: "Logged in successfully!", arbitrumWallet: user.walletAddress, celoWallet: user.celoWalletAddress, phoneNumber: user.phoneNumber });
+  res.send({ token, message: "Logged in successfully!", arbitrumWallet: user.walletAddress, phoneNumber: user.phoneNumber });
 };
 
 
