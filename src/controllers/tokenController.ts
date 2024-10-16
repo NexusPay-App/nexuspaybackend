@@ -21,9 +21,7 @@ export const send = async (req: Request, res: Response) => {
         if (!user) {
             return res.status(404).send({ message: "Recipient not found!" });
         }
-        if (chain === 'celo') {
-            recipientAddress = user.celoWalletAddress;
-        } else if (chain === 'arbitrum') {
+        if (chain === 'celo' || chain == "arbitrum") {
             recipientAddress = user.walletAddress;
         } else {
             return res.status(400).send({ message: "Unsupported chain!" });
@@ -35,7 +33,7 @@ export const send = async (req: Request, res: Response) => {
 
     try {
         if (chain === 'celo' || chain == 'arbitrum') {
-            sender = await User.findOne({ celoWalletAddress: senderAddress });
+            sender = await User.findOne({ walletAddress: senderAddress });
         }
         else {
             return res.status(400).send({ message: "Unsupported chain!" });
@@ -96,7 +94,7 @@ export const send = async (req: Request, res: Response) => {
 
 
 export const pay = async (req: Request, res: Response) => {
-    const { senderAddress, businessUniqueCode, amount, confirm } = req.body;
+    const { senderAddress, businessUniqueCode, amount, confirm, chainName } = req.body;
     if (!businessUniqueCode || !amount || !senderAddress) {
         return res.status(400).send({ message: "Required parameters are missing!" });
     }
@@ -115,7 +113,7 @@ export const pay = async (req: Request, res: Response) => {
     }
 
     try {
-        await sendToken(business.walletAddress, amount, "arbitrum", sender?.privateKey as string)
+        await sendToken(business.walletAddress, amount, chainName, sender?.privateKey as string)
         res.send({ message: 'Token sent successfully to the business!', paid: true });
     } catch (error) {
         console.error("Error in pay API:", error);

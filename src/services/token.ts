@@ -1,14 +1,9 @@
 import { Chain } from '../types/token';
 import { TokenTransferEvent } from '../types/token';
-import { tokenContract } from '../config/constants';
-import { IHybridPaymaster, PaymasterMode, SponsorUserOperationDto } from '@biconomy/paymaster';
-import { instanceAccount, client } from './auth';
-import { User } from '../models/models';
-import { ethers } from 'ethers';
+import { client } from './auth';
 import { privateKeyToAccount, smartWallet } from "thirdweb/wallets";
 import { defineChain, getContract, sendTransaction } from "thirdweb";
 import { transfer } from "thirdweb/extensions/erc20";
-import { celo } from '../config/constants';
 import config from "../config/env"
 // const PLATFORM_WALLET_ADDRESS = "0x4c2C4bB506D2eFab0a7235DEee07E75737d5472f"; // Hardcoded platform wallet address
 
@@ -33,7 +28,7 @@ const PLATFORM_WALLET_ADDRESS = "0x9c0486FafFE8E44FcEdc8e0D8760811BF25a942c"; //
 //   const FEE_PERCENTAGE = 0.005; // 0.5%
 
 
-export async function sendToken(recipientAddress: string, amount: number, chainName: string, pk: string) {
+export async function sendToken(recipientAddress: string, amount: number, chainName: string = "celo", pk: string) {
     const chain = defineChain(config[chainName].chainId)
     //TODO: ADD fee model
     const tokenAddress = config[chainName].tokenAddress
