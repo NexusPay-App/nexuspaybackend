@@ -2,7 +2,7 @@ import { mpesaClient } from "./auth";
 import { MPESA_CONFIG } from "./config";
 
 
-export const initiateSTKPush = async (senderPhoneNumber: string, businessShortCode: string, amount: number, accountRef: string, transactionType = 'CustomerPayBillOnline', transactionDesc = 'Lipa na mpesa online',) => {
+export const initiateSTKPush = async (senderPhoneNumber: string, businessShortCode: string, amount: number, accountRef: string, user: string, transactionType = 'CustomerPayBillOnline', transactionDesc = 'Lipa na mpesa online') => {
     try {
         const client = await mpesaClient()
 
@@ -18,7 +18,7 @@ export const initiateSTKPush = async (senderPhoneNumber: string, businessShortCo
             PartyA: senderPhoneNumber,
             PartyB: MPESA_CONFIG.shortCode,
             PhoneNumber: senderPhoneNumber,
-            CallBackURL: MPESA_CONFIG.callbackUrl,
+            CallBackURL: `${MPESA_CONFIG.callbackUrl}?user=${user}`,
             AccountReference: accountRef,
             TransactionDesc: transactionDesc
         }
