@@ -5,24 +5,32 @@ import jwt from 'jsonwebtoken';
 
 declare global {
     namespace Express {
-      interface Request {
-        user?: any; // Define the type according to what you store in user
-      }
+        interface Request {
+            currentUser?: any; // Define the type according to what you store in user
+            session?: any
+        }
     }
-  }
+}
 
-const JWT_SECRET = process.env.JWT_SECRET || 'zero'; // Use environment variable for JWT secret
+const JWT_SECRET = process.env.SECRET_KEY || 'zero';
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+    let token: any;
 
-    if (!token) {
-        return res.status(401).json({ message: "No token provided" });
+    if (
+        req.headers.authorization &&
+        req.headers.authorization.startsWith("Bearer")
+    ) {
+        token = req.headers.authorization.split(" ")[1];
     }
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    const accessToken = req.session?.token || token;
+
+    if (!accessToken) return res.status(401).json({ message: "No token provided" });
+
+    jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
         if (err) {
+            console.log("error ", err)
             // Provide more specific messages based on the type of error
             if (err.name === 'JsonWebTokenError') {
                 return res.status(401).json({ message: "Invalid token" });
@@ -32,7 +40,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
                 return res.status(403).json({ message: "Unauthorized access" });
             }
         }
-        req.user = user;
+        req.currentUser = user;
         next();
     });
 };
