@@ -71,7 +71,8 @@ This endpoint verifies the OTP and completes the user's registration, creating a
   {
     "phoneNumber": "user_phone_number",
     "password": "user_password",
-    "otp": "received_otp"
+    "otp": "received_otp",
+    "chainName": "celo"
   }
   ```
 
