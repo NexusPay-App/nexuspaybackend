@@ -69,6 +69,6 @@ export const initiateSTKPush = async (senderPhoneNumber: string, businessShortCo
         }
 
     } catch (error: any) {
-        console.log("Error initiating stk push ", error)
+        console.log("Error initiating stk push ", error.response.data.errorMessage)
     }
 }
