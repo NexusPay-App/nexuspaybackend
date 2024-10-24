@@ -36,6 +36,7 @@
     "@types/mongoose": "^5.11.97",
     "@vercel/node": "^3.0.7",
     "africastalking": "^0.6.6",
+    "axios": "^1.7.7",
     "bcrypt": "^5.1.1",
     "binance-api-node": "^0.12.7",
     "body-parser": "^1.20.2",

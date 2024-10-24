@@ -8,7 +8,14 @@ let config: Record<string, any> = {
     development: {
         THIRDWEB_SECRET_KEY: process.env.THIRDWEB_SECRET_KEY as string,
         AFRICAS_TALKING_API_KEY: process.env.AFRICAS_TALKING_API_KEY as string,
-        MONGO_URL: process.env.MONGO_URL as string,
+        MONGO_URL: process.env.DEV_MONGO_URL as string,
+        MPESA_CONSUMER_KEY : process.env.MPESA_DEV_CONSUMER_KEY,
+        MPESA_CONSUMER_SECRET : process.env.MPESA_DEV_CONSUMER_SECRET,
+        MPESA_SHORTCODE : process.env.MPESA_DEV_SHORTCODE,
+        MPESA_PASSKEY : process.env.MPESA_DEV_PASSKEY,
+        MPESA_STK_CALLBACK_URL : process.env.MPESA_DEV_STK_CALLBACK_URL,
+        MPESA_BASEURL: `https://sandbox.safaricom.co.ke`,
+        MPESA_REQUEST_TIMEOUT: 5000,
         celo: {
             chainId: 44787,
             tokenAddress: "0x3572c9ce620f80032Ee3b101d75300186a0D7787"
@@ -21,7 +28,14 @@ let config: Record<string, any> = {
     production: {
         THIRDWEB_SECRET_KEY: process.env.THIRDWEB_SECRET_KEY as string,
         AFRICAS_TALKING_API_KEY: process.env.AFRICAS_TALKING_API_KEY as string,
-        MONGO_URL: process.env.MONGO_URL as string,
+        MONGO_URL: process.env.PROD_MONGO_URL as string,
+        MPESA_CONSUMER_KEY : process.env.MPESA_PROD_CONSUMER_KEY,
+        MPESA_CONSUMER_SECRET : process.env.MPESA_PROD_CONSUMER_SECRET,
+        MPESA_SHORTCODE : process.env.MPESA_PROD_SHORTCODE,
+        MPESA_PASSKEY : process.env.MPESA_PROD_PASSKEY,
+        MPESA_STK_CALLBACK_URL : process.env.MPESA_PROD_STK_CALLBACK_URL,
+        MPESA_BASEURL: `https://api.safaricom.co.ke`,
+        MPESA_REQUEST_TIMEOUT: 5000,
         celo: {
             chainId: 42220,
             tokenAddress: "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"
@@ -34,7 +48,14 @@ let config: Record<string, any> = {
     test: {
         THIRDWEB_SECRET_KEY: process.env.THIRDWEB_SECRET_KEY as string,
         AFRICAS_TALKING_API_KEY: process.env.AFRICAS_TALKING_API_KEY as string,
-        MONGO_URL: process.env.MONGO_URL as string,
+        MONGO_URL: process.env.DEV_MONGO_URL as string,
+        MPESA_CONSUMER_KEY : process.env.MPESA_DEV_CONSUMER_KEY,
+        MPESA_CONSUMER_SECRET : process.env.MPESA_DEV_CONSUMER_SECRET,
+        MPESA_SHORTCODE : process.env.MPESA_DEV_SHORTCODE,
+        MPESA_PASSKEY : process.env.MPESA_DEV_PASSKEY,
+        MPESA_STK_CALLBACK_URL : process.env.MPESA_DEV_STK_CALLBACK_URL,
+        MPESA_BASEURL: `https://sandbox.safaricom.co.ke`,
+        MPESA_REQUEST_TIMEOUT: 5000,
         celo: {
             chainId: 44787,
             tokenAddress: "0x3572c9ce620f80032Ee3b101d75300186a0D7787"

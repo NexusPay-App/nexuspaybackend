@@ -13,6 +13,7 @@ import authRoutes from './routes/authRoutes';
 import businessRoutes from './routes/businessRoutes';
 import tokenRoutes from './routes/tokenRoutes';
 import usdcRoutes from './routes/usdcRoutes';
+import mpesaRoutes from './routes/mpesaRoutes';
 import { connect } from './services/database';
 import { Verification } from './models/verificationModel';
 
@@ -65,6 +66,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/token', tokenRoutes);
 app.use('/api/usdc', usdcRoutes);
+app.use('/api/mpesa', mpesaRoutes);
 
 
 app.post('/api/verifications', async (req, res) => {
