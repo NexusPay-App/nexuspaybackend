@@ -10,12 +10,11 @@ export const mpesaDeposit = async (req: Request, res: Response, next: NextFuncti
         console.log("phone: ", phone)
 
         // initiate deposit
-        await initiateSTKPush(phone, config.MPESA_SHORTCODE!, amount, "deposit", userId).then((response) => {
-            res.status(201).json({
-                status: "success",
-                message: `STK push successfully initiated`,
-            });
-        })
+        const queryData = await initiateSTKPush(phone, config.MPESA_SHORTCODE!, amount, "deposit", userId)
+        if (!queryData || queryData.ResultCode != "0") {
+            return res.status(400).json({ message: "MPESA transaction unsuccessful" })
+        }
+        console.log("mpesa transaction successful, move on with sending crypto worth ksh: ", amount)
     } catch (error) {
         next(error)
     }

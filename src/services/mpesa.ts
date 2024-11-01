@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from "axios";
 import { Business } from "../models/businessModel";
 import { time } from "console";
 import { Timestamp } from "mongodb";
+import { delay } from "./utils";
 
 let cachedAccessToken: { accessToken: string, expiry: number } = { accessToken: '', expiry: 0 }
 
@@ -80,17 +81,15 @@ export const initiateSTKPush = async (senderPhoneNumber: string, businessShortCo
         const { data } = await client.post("/mpesa/stkpush/v1/processrequest", stkData)
         console.log("data: ", data)
 
-
-        setTimeout(async () => {
-            let queryData = await mpesaExpressQuery(client, stkData.BusinessShortCode, password, timeStamp, data.CheckoutRequestID)
-            console.log("query data: ", queryData)
-        }, 10000)
-
         if (!data || data.ResponseCode != "0") {
             throw new Error("Could not initiate stk push")
         }
 
+        await delay(10000)
+        let queryData = await mpesaExpressQuery(client, stkData.BusinessShortCode, password, timeStamp, data.CheckoutRequestID)
+        console.log("query data: ", queryData)
+        return queryData
     } catch (error: any) {
-        console.log("Error initiating stk push ", error.response.data.errorMessage)
+        console.log("Error initiating stk push ", error)
     }
 }
