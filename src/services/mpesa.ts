@@ -1,5 +1,8 @@
 import config from "../config/env";
 import axios, { AxiosInstance } from "axios";
+import { Business } from "../models/businessModel";
+import { time } from "console";
+import { Timestamp } from "mongodb";
 
 let cachedAccessToken: { accessToken: string, expiry: number } = { accessToken: '', expiry: 0 }
 
@@ -41,6 +44,17 @@ const mpesaClient = async (): Promise<AxiosInstance> => {
     })
 }
 
+const mpesaExpressQuery = async (client: AxiosInstance, businessShortCode: string, password: string, timestamp: string, checkoutRequestId: string) => {
+    const queryData = {
+        BusinessShortCode: businessShortCode,
+        Password: password,
+        Timestamp: timestamp,
+        CheckoutRequestID: checkoutRequestId,
+    }
+    const { data } = await client.post("/mpesa/stkpushquery/v1/query", queryData)
+    return data
+}
+
 export const initiateSTKPush = async (senderPhoneNumber: string, businessShortCode: string, amount: number, accountRef: string, user: string, transactionType = 'CustomerPayBillOnline', transactionDesc = 'Lipa na mpesa online') => {
     try {
         const client = await mpesaClient()
@@ -61,8 +75,16 @@ export const initiateSTKPush = async (senderPhoneNumber: string, businessShortCo
             AccountReference: accountRef,
             TransactionDesc: transactionDesc
         }
+        console.log("short code: ", stkData.BusinessShortCode)
 
         const { data } = await client.post("/mpesa/stkpush/v1/processrequest", stkData)
+        console.log("data: ", data)
+
+
+        setTimeout(async () => {
+            let queryData = await mpesaExpressQuery(client, stkData.BusinessShortCode, password, timeStamp, data.CheckoutRequestID)
+            console.log("query data: ", queryData)
+        }, 10000)
 
         if (!data || data.ResponseCode != "0") {
             throw new Error("Could not initiate stk push")
