@@ -12,6 +12,7 @@ let config: Record<string, any> = {
         MPESA_CONSUMER_KEY: process.env.MPESA_DEV_CONSUMER_KEY,
         MPESA_CONSUMER_SECRET: process.env.MPESA_DEV_CONSUMER_SECRET,
         MPESA_SHORTCODE: process.env.MPESA_DEV_SHORTCODE,
+        MPESA_B2C_SHORTCODE: process.env.MPESA_DEV_B2C_SHORTCODE,
         MPESA_PASSKEY: process.env.MPESA_DEV_PASSKEY,
         MPESA_STK_CALLBACK_URL: process.env.MPESA_DEV_STK_CALLBACK_URL,
         MPESA_BASEURL: `https://sandbox.safaricom.co.ke`,

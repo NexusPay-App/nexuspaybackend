@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response, Router } from "express";
-import { b2c, initiateSTKPush } from "../services/mpesa";
+import { initiateB2C, initiateSTKPush } from "../services/mpesa";
 import config from "../config/env"
 import { getConversionRateWithCaching, sendToken } from "../services/token";
 
@@ -30,10 +30,12 @@ export const mpesaDeposit = async (req: Request, res: Response, next: NextFuncti
 export const mpesaWithdraw = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const user = req.user
-        const queryData = await b2c()
-        console.log("query data: ", queryData)
-        res.json(queryData)
+        const amount = req.body.amount
+        const receiver = 254708374149
 
+        const serviceAcceptedObj = await initiateB2C(amount, receiver)
+
+        res.json(serviceAcceptedObj)
     } catch (error) {
         next(error)
     }
