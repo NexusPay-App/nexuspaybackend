@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response, Router } from "express";
-import { initiateSTKPush } from "../services/mpesa";
+import { b2c, initiateSTKPush } from "../services/mpesa";
 import config from "../config/env"
 import { getConversionRateWithCaching, sendToken } from "../services/token";
 
@@ -25,6 +25,37 @@ export const mpesaDeposit = async (req: Request, res: Response, next: NextFuncti
     } catch (error) {
         next(error)
     }
+}
+
+export const mpesaWithdraw = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const user = req.user
+        const queryData = await b2c()
+        console.log("query data: ", queryData)
+        res.json(queryData)
+
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const mpesaResultWebhook = (req: Request, res: Response) => {
+    console.log("---------------Safaricom result----------------")
+    console.log(req.body)
+    console.log("-----------------------------------------")
+
+    return res.json(req.body)
+}
+
+export const mpesaQueueWebhook = (req: Request, res: Response) => {
+    console.log("---------------Queue timeout-------------")
+    console.log(req.body)
+    console.log("-----------------------------------------")
+
+    let message = {
+        "Timeout": true
+    }
+    res.json(message)
 }
 
 export { router as DepositRouter }

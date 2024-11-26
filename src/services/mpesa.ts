@@ -1,9 +1,7 @@
 import config from "../config/env";
 import axios, { AxiosInstance } from "axios";
-import { Business } from "../models/businessModel";
-import { time } from "console";
-import { Timestamp } from "mongodb";
 import { delay } from "./utils";
+import { randomUUID } from "crypto";
 
 let cachedAccessToken: { accessToken: string, expiry: number } = { accessToken: '', expiry: 0 }
 
@@ -54,6 +52,31 @@ const mpesaExpressQuery = async (client: AxiosInstance, businessShortCode: strin
     }
     const { data } = await client.post("/mpesa/stkpushquery/v1/query", queryData)
     return data
+}
+export const b2c = async () => {
+    try {
+        const client = await mpesaClient()
+        const uuid = randomUUID()
+        const stkData = {
+            "OriginatorConversationID": uuid,
+            "InitiatorName": "testapi",
+            "SecurityCredential": "luh8p8um43OKCjXKFHvv4R05ldWS6YCiVMIFdMAnKQx0d4UzUkDx/raXZFfGPXyUcDIlOygNyrPMEmk5KrE6lbWGGo6NItU6P1n06SqlAEWQgnrD2p632DMt1HNO25h12YUjmWjkemvPI92jg50XGPXzx9QgVYguNl7dTYXNt0sWgPNhAyPjcQQnP+D/cFZ6rlRg+VkHRBpsE9lIWV0xeWxFGvxv3N33ZwlTrAOShS4oKyDR5lAmWD68DSOpmJVagCQ+oL0iodvGogtOEhT8HJTpv2Us5Sft0ggRY4Pzc1o+YH8h47hj603913Ojz5p0HGF+nTzk2EqXQ77Qgt4HuA==",
+            "CommandID": "BusinessPayment",
+            "Amount": 10,
+            "PartyA": 600977,
+            "PartyB": 254708374149,
+            "Remarks": "my remarks",
+            "QueueTimeOutURL": config.MPESA_WEBHOOK_URL + "/api/mpesa/queue",
+            "ResultURL": config.MPESA_WEBHOOK_URL + "/api/mpesa/result",
+            "Occasion": "christmas",
+        }
+        const { data } = await client.post("/mpesa/b2c/v3/paymentrequest", stkData)
+        console.log("data: ", data)
+    } catch (error) {
+        console.log("error b2c: ", error)
+
+    }
+
 }
 
 export const initiateSTKPush = async (senderPhoneNumber: string, businessShortCode: string, amount: number, accountRef: string, user: string, transactionType = 'CustomerPayBillOnline', transactionDesc = 'Lipa na mpesa online') => {

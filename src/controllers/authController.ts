@@ -85,7 +85,6 @@ export const loginUser = async (req: Request, res: Response) => {
   if (!phoneNumber || !password) {
     return res.status(400).send({ message: "Phone number and password are required!" });
   }
-  console.log(`${phoneNumber} and password is ${password}`)
   let user;
   try {
     user = await User.findOne({ phoneNumber: phoneNumber });
@@ -109,7 +108,7 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 
   const token = jwt.sign({ phoneNumber: user.phoneNumber, walletAddress: user.walletAddress }, 'zero', { expiresIn: '1h' });
-  res.send({ token, message: "Logged in successfully!", arbitrumWallet: user.walletAddress, phoneNumber: user.phoneNumber });
+  res.send({ token, message: "Logged in successfully!", walletAddress: user.walletAddress, phoneNumber: user.phoneNumber });
 };
 
 

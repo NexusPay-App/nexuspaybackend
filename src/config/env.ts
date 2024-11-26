@@ -16,6 +16,7 @@ let config: Record<string, any> = {
         MPESA_STK_CALLBACK_URL: process.env.MPESA_DEV_STK_CALLBACK_URL,
         MPESA_BASEURL: `https://sandbox.safaricom.co.ke`,
         MPESA_REQUEST_TIMEOUT: 5000,
+        MPESA_WEBHOOK_URL: "https://cbca-41-90-178-59.ngrok-free.app",
         celo: {
             chainId: 44787,
             tokenAddress: "0x3572c9ce620f80032Ee3b101d75300186a0D7787"
@@ -37,6 +38,7 @@ let config: Record<string, any> = {
         MPESA_STK_CALLBACK_URL: process.env.MPESA_PROD_STK_CALLBACK_URL,
         MPESA_BASEURL: `https://api.safaricom.co.ke`,
         MPESA_REQUEST_TIMEOUT: 5000,
+        MPESA_WEBHOOK_URL: "https://cbca-41-90-178-59.ngrok-free.app",
         celo: {
             chainId: 42220,
             tokenAddress: "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"
@@ -58,6 +60,7 @@ let config: Record<string, any> = {
         MPESA_STK_CALLBACK_URL: process.env.MPESA_DEV_STK_CALLBACK_URL,
         MPESA_BASEURL: `https://sandbox.safaricom.co.ke`,
         MPESA_REQUEST_TIMEOUT: 5000,
+        MPESA_WEBHOOK_URL: "https://cbca-41-90-178-59.ngrok-free.app",
         celo: {
             chainId: 44787,
             tokenAddress: "0x3572c9ce620f80032Ee3b101d75300186a0D7787"
