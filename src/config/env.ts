@@ -14,10 +14,9 @@ let config: Record<string, any> = {
         MPESA_SHORTCODE: process.env.MPESA_DEV_SHORTCODE,
         MPESA_B2C_SHORTCODE: process.env.MPESA_DEV_B2C_SHORTCODE,
         MPESA_PASSKEY: process.env.MPESA_DEV_PASSKEY,
-        MPESA_STK_CALLBACK_URL: process.env.MPESA_DEV_STK_CALLBACK_URL,
         MPESA_BASEURL: `https://sandbox.safaricom.co.ke`,
         MPESA_REQUEST_TIMEOUT: 5000,
-        MPESA_WEBHOOK_URL: "https://cbca-41-90-178-59.ngrok-free.app",
+        MPESA_WEBHOOK_URL: "https://3506-41-90-178-59.ngrok-free.app",
         celo: {
             chainId: 44787,
             tokenAddress: "0x3572c9ce620f80032Ee3b101d75300186a0D7787"
@@ -26,7 +25,8 @@ let config: Record<string, any> = {
             chainId: 421614,
             tokenAddress: "0x4e2Bd3a78bd9F064B7551F078f0Dde4Edab86238",
         },
-        PLATFORM_WALLET_PRIVATE_KEY: process.env.DEV_PLATFORM_WALLET_PRIVATE_KEY
+        PLATFORM_WALLET_PRIVATE_KEY: process.env.DEV_PLATFORM_WALLET_PRIVATE_KEY,
+        PLATFORM_WALLET_ADDRESS: process.env.DEV_PLATFORM_WALLET_ADDRESS
     },
     production: {
         THIRDWEB_SECRET_KEY: process.env.THIRDWEB_SECRET_KEY as string,

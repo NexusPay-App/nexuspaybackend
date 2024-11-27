@@ -22,12 +22,6 @@ export function calculateTransactionFee(amount: number): number {
     return 0.95; // For amounts above $150.01
 }
 
-// Other business logic functions like sendToken, payToken etc. go here.
-
-const PLATFORM_WALLET_ADDRESS = "0x9c0486FafFE8E44FcEdc8e0D8760811BF25a942c"; // Hardcoded platform wallet address
-//   const FEE_PERCENTAGE = 0.005; // 0.5%
-
-
 export async function sendToken(recipientAddress: string, amount: number, chainName: string = "celo", pk: string) {
     const chain = defineChain(config[chainName].chainId)
     //TODO: ADD fee model

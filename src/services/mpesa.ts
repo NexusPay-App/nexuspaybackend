@@ -68,7 +68,7 @@ export const initiateB2C = async (amount: number, receiver: number) => {
             "PartyB": receiver,
             "Remarks": "remarks",
             "QueueTimeOutURL": config.MPESA_WEBHOOK_URL + "/api/mpesa/queue",
-            "ResultURL": config.MPESA_WEBHOOK_URL + "/api/mpesa/result",
+            "ResultURL": config.MPESA_WEBHOOK_URL + "/api/mpesa/b2c/result",
             "Occasion": "occasion",
         }
         const { data } = await client.post("/mpesa/b2c/v3/paymentrequest", stkData)
@@ -96,7 +96,7 @@ export const initiateSTKPush = async (senderPhoneNumber: string, businessShortCo
             PartyA: senderPhoneNumber,
             PartyB: config.MPESA_SHORTCODE,
             PhoneNumber: senderPhoneNumber,
-            CallBackURL: `${config.MPESA_STK_CALLBACK_URL}?user=${user}`,
+            CallBackURL: `${config.MPESA_WEBHOOK_URL}/api/mpesa/stk-push/result`,
             AccountReference: accountRef,
             TransactionDesc: transactionDesc
         }
