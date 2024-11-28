@@ -52,6 +52,7 @@ export const mpesaWithdraw = async (req: Request, res: Response, next: NextFunct
     }
 }
 
+//This webhook is called when mpesastk push result is failed only
 export const mpesaSTKPushWebhook = (req: Request, res: Response) => {
     console.log("-----------------Received MPESA Webhook--------------------")
     // format and dump the request payload recieved from safaricom in the terminal
@@ -69,6 +70,7 @@ export const mpesaSTKPushWebhook = (req: Request, res: Response) => {
     res.json(message);
 }
 
+//This webhook is called when b2c request result is both successful and failed
 export const mpesaB2CWebhook = (req: Request, res: Response) => {
     console.log("---------------Safaricom result----------------")
     console.log(req.body)
