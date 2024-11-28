@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { createAccount, generateOTP, otpStore, africastalking, SALT_ROUNDS } from "../services/auth"
 import { handleError } from "../services/utils"
+import { migrateUser } from '../services/migration';
 
 export const initiateRegisterUser = async (req: Request, res: Response) => {
   const { phoneNumber } = req.body;
@@ -78,9 +79,8 @@ export const registerUser = async (req: Request, res: Response) => {
   res.send({ token, message: "Registered successfully!", arbitrumWallet: newUser.walletAddress, phoneNumber: newUser.phoneNumber });
 };
 
-
 export const loginUser = async (req: Request, res: Response) => {
-  const { phoneNumber, password } = req.body;
+  const { phoneNumber, password, thirdwebWallet } = req.body;
 
   if (!phoneNumber || !password) {
     return res.status(400).send({ message: "Phone number and password are required!" });
@@ -105,6 +105,21 @@ export const loginUser = async (req: Request, res: Response) => {
 
   if (!isPasswordValid) {
     return res.status(401).send({ message: "Invalid credentials!" });
+  }
+
+  // Once the user has logged in check if he has migrated to the new platform
+  if (!user.migrated) {
+    // Start migrating user
+    try {
+      await migrateUser(user, thirdwebWallet)
+
+      // Update user
+      await User.findByIdAndUpdate(user.id, {
+        migrated: true
+      })
+    } catch (error) {
+      console.log("Error migrating user ", error)
+    }
   }
 
   const token = jwt.sign({ phoneNumber: user.phoneNumber, walletAddress: user.walletAddress }, 'zero', { expiresIn: '1h' });

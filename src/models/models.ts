@@ -22,6 +22,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true
+  },
+  migrated: {
+    type: Boolean,
+    required: false,
+    default: false
   }
 });
 
